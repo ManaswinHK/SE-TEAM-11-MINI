@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import Login from './pages/Login.jsx'
+import Register from './pages/Register.jsx'
+import Settings from './pages/Settings.jsx'
 import { api } from './api.js'
 import { AuthProvider, useAuth } from './auth/AuthContext.jsx'
 
@@ -33,11 +35,12 @@ export default function App() {
     <AuthProvider>
       <Routes>
         <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="employees" element={<Placeholder title="Employees" />} />
           <Route path="separations" element={<Placeholder title="Separations" />} />
-          <Route path="settings" element={<Placeholder title="Settings" />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </AuthProvider>

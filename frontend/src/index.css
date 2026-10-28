@@ -71,3 +71,17 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 .user-box { border-top: 1px solid rgba(255, 255, 255, 0.12); padding: 0.75rem 0.5rem 0; font-size: 0.85rem; }
 .user-name { font-weight: 600; }
 .user-meta { color: #9aa6bd; margin: 0.15rem 0 0.5rem; }
+
+/* Cards, grids, tables */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.25rem; margin-bottom: 1.25rem; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.25rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 1rem; }
+.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.table th { text-align: left; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); padding: 0.5rem 0.4rem; }
+.table td { border-bottom: 1px solid var(--border); padding: 0.5rem 0.4rem; vertical-align: middle; }
+.table tr.inactive td { color: var(--muted); }
+.right { text-align: right; }
+.center { text-align: center; text-decoration: none; }
+.inline-form { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+.inline-form input, .inline-form select { margin-top: 0; flex: 1; min-width: 140px; }
+.success { color: var(--success); background: var(--success-soft); padding: 0.5rem 0.65rem; border-radius: 6px; font-size: 0.9rem; }

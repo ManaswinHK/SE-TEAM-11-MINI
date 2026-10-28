@@ -24,7 +24,8 @@ public class SecurityConfig {
                 // AAS-SR-001: browsers must only talk to the API over HTTPS once they have seen it.
                 .headers(h -> h.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/health", "/actuator/health", "/api/auth/login", "/api/auth/verify-otp").permitAll()
+                        .requestMatchers("/api/health", "/actuator/health", "/api/auth/login", "/api/auth/verify-otp",
+                                "/api/organizations/register").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((req, res, ex) -> {
