@@ -38,6 +38,18 @@ npm install
 npm run dev
 ```
 
+### Demo accounts (local development only)
+The dev profile seeds **Acme Technologies** with one user per role. Password for all: `Demo@1234`.
+
+| Email | Role | Sign-in |
+|---|---|---|
+| admin@acme.test | HR Admin | password + one-time code |
+| hr@acme.test | HR Manager | password + one-time code |
+| manager@acme.test | Department Manager | password |
+| ceo@acme.test | Leadership | password |
+
+HR roles must enter a 6-digit code from an authenticator app. On first sign-in the app shows the key to add to Google/Microsoft Authenticator; in the dev profile it also shows the current code so demos work without a phone.
+
 ## Tests
 ```bash
 cd backend && ./mvnw verify

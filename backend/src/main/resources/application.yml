@@ -23,6 +23,11 @@ management:
 
 aas:
   version: 0.1.0
+  security:
+    # Override with the AAS_JWT_SECRET environment variable outside local development.
+    jwt-secret: ${AAS_JWT_SECRET:local-dev-secret-change-me-0123456789abcdef}
+    access-token-minutes: 30
+    dev-otp-echo: false
 
 ---
 spring:
@@ -33,6 +38,10 @@ spring:
     url: jdbc:h2:file:./data/aas-dev;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     username: sa
     password: ""
+aas:
+  security:
+    # Dev only: the login response includes the current one-time code so demos work without a phone.
+    dev-otp-echo: true
 
 ---
 spring:
