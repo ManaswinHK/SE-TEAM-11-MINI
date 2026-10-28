@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
+import UsersPanel from './UsersPanel.jsx'
 
 const CATEGORY_LABEL = { VOLUNTARY: 'Voluntary', INVOLUNTARY: 'Involuntary', OTHER: 'Other' }
 
@@ -149,6 +150,7 @@ export default function Settings() {
           )}
         />
       </div>
+      {canEdit && <UsersPanel />}
     </section>
   )
 }

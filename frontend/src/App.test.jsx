@@ -28,3 +28,19 @@ test('signed-in users see the navigation with their role', () => {
   expect(screen.getByRole('link', { name: 'Employees' })).toBeInTheDocument()
   expect(screen.getByText(/HR Manager · Acme/)).toBeInTheDocument()
 })
+
+test('leadership does not see employee-level pages', () => {
+  sessionStorage.setItem('aas.session', JSON.stringify({
+    accessToken: 't', expiresAt: Date.now() + 30 * 60 * 1000,
+    user: { fullName: 'Lakshmi', role: 'LEADERSHIP', orgName: 'Acme' },
+  }))
+  globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, text: () => Promise.resolve('{"status":"UP"}') })
+  render(
+    <MemoryRouter initialEntries={['/employees']}>
+      <App />
+    </MemoryRouter>,
+  )
+  expect(screen.queryByRole('link', { name: 'Employees' })).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
+  expect(screen.getByText(/Welcome, Lakshmi/)).toBeInTheDocument()
+})
