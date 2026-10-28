@@ -12,9 +12,9 @@ Software Engineering Lab mini project, Section B.
 | R Harshith | PES1UG24AM117 |
 
 ## Deliverables
-- [Software Requirements Specification](docs/SRS_Attrition_Analysis_System.pdf)
-- [Software Architecture & Design](docs/SAD_Attrition_Analysis_System.pdf)
-- [Software Test Plan](docs/Test_Plan_Attrition_Analysis_System.pdf)
+- [Software Requirements Specification](SRS_SAD_TestPlan/SRS_Attrition_Analysis_System.pdf)
+- [Software Architecture & Design](SRS_SAD_TestPlan/SAD_Attrition_Analysis_System.pdf)
+- [Software Test Plan](SRS_SAD_TestPlan/Test_Plan_Attrition_Analysis_System.pdf)
 
 ## Tech stack
 | Layer | Technology |
