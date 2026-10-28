@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: attrition-analysis
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+  error:
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+aas:
+  version: 0.1.0
+  security:
+    # Override with the AAS_JWT_SECRET environment variable outside local development.
+    jwt-secret: ${AAS_JWT_SECRET:local-dev-secret-change-me-0123456789abcdef}
+    access-token-minutes: 30
+    dev-otp-echo: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:h2:file:./data/aas-dev;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password: ""
+aas:
+  security:
+    # Dev only: the login response includes the current one-time code so demos work without a phone.
+    dev-otp-echo: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:aas-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aas}
+    username: ${DB_USER:aas}
+    password: ${DB_PASSWORD:}
