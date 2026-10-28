@@ -114,3 +114,13 @@ label.checkbox { display: flex; align-items: center; gap: 0.5rem; font-weight: 4
 label.checkbox input { width: auto; margin: 0; }
 label.inline { display: flex; align-items: center; gap: 0.4rem; margin: 0; font-weight: 400; color: var(--muted); }
 label.inline input { margin-top: 0; }
+
+/* Dashboard */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; }
+.kpi-label { color: var(--muted); font-size: 0.85rem; }
+.kpi-value { font-size: 2rem; font-weight: 650; margin: 0.2rem 0; font-variant-numeric: tabular-nums; }
+.kpi-hint { color: var(--muted); font-size: 0.8rem; }
+.chart { position: relative; }
+.filters.card { padding: 0.75rem; align-items: center; }
+.table td.right, .table th.right { font-variant-numeric: tabular-nums; }

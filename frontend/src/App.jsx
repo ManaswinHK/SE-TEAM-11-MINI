@@ -1,27 +1,12 @@
-import { useEffect, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Layout, { RequirePage } from './components/Layout.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 import Employees from './pages/Employees.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Separations from './pages/Separations.jsx'
 import Settings from './pages/Settings.jsx'
-import { api } from './api.js'
-import { AuthProvider, useAuth } from './auth/AuthContext.jsx'
-
-function Home() {
-  const { user } = useAuth()
-  const [health, setHealth] = useState(null)
-  useEffect(() => {
-    api('/api/health').then(setHealth).catch(() => setHealth({ status: 'DOWN' }))
-  }, [])
-  return (
-    <section>
-      <h1>Welcome, {user.fullName}</h1>
-      <p className="muted">API status: {health ? health.status : 'checking…'}</p>
-    </section>
-  )
-}
+import { AuthProvider } from './auth/AuthContext.jsx'
 
 export default function App() {
   return (
@@ -30,7 +15,7 @@ export default function App() {
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
         <Route element={<Layout />}>
-          <Route index element={<Home />} />
+          <Route index element={<Dashboard />} />
           <Route path="employees" element={<RequirePage page="employees"><Employees /></RequirePage>} />
           <Route path="separations" element={<RequirePage page="separations"><Separations /></RequirePage>} />
           <Route path="settings" element={<Settings />} />
