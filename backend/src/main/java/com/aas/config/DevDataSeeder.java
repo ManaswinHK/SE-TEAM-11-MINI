@@ -5,14 +5,20 @@ import com.aas.auth.AppUserRepository;
 import com.aas.auth.Role;
 import com.aas.employee.Employee;
 import com.aas.employee.EmployeeRepository;
+import com.aas.employee.EmployeeStatus;
 import com.aas.employee.HeadcountService;
 import com.aas.org.Department;
 import com.aas.org.DepartmentRepository;
+import com.aas.org.ExitReason;
+import com.aas.org.ExitReasonRepository;
 import com.aas.org.OrgService;
 import com.aas.org.Organization;
 import com.aas.org.OrganizationRepository;
+import com.aas.separation.Separation;
+import com.aas.separation.SeparationRepository;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.slf4j.Logger;
@@ -37,17 +43,21 @@ public class DevDataSeeder implements CommandLineRunner {
     private final AppUserRepository users;
     private final EmployeeRepository employees;
     private final HeadcountService headcount;
+    private final ExitReasonRepository reasons;
+    private final SeparationRepository separations;
     private final PasswordEncoder encoder;
 
     public DevDataSeeder(OrganizationRepository orgs, OrgService orgService, DepartmentRepository departments,
                          AppUserRepository users, EmployeeRepository employees, HeadcountService headcount,
-                         PasswordEncoder encoder) {
+                         ExitReasonRepository reasons, SeparationRepository separations, PasswordEncoder encoder) {
         this.orgs = orgs;
         this.orgService = orgService;
         this.departments = departments;
         this.users = users;
         this.employees = employees;
         this.headcount = headcount;
+        this.reasons = reasons;
+        this.separations = separations;
         this.encoder = encoder;
     }
 
@@ -73,8 +83,53 @@ public class DevDataSeeder implements CommandLineRunner {
         users.save(manager);
         users.save(new AppUser(org.getId(), "ceo@acme.test", "Lakshmi Leadership", hash, Role.LEADERSHIP));
         seedEmployees(org, depts);
+        seedSeparations(org, depts);
         backfillSnapshots(org);
         log.info("Seeded demo organization 'Acme Technologies' (password for all demo users: {})", DEMO_PASSWORD);
+    }
+
+    /**
+     * About 55 exits since January 2025 (higher in Sales and Customer Support), plus a few people still serving
+     * notice, with a realistic mix of exit reasons.
+     */
+    private void seedSeparations(Organization org, Map<String, Department> depts) {
+        Random rnd = new Random(7);
+        Map<String, ExitReason> byName = new LinkedHashMap<>();
+        reasons.findByOrgIdOrderByName(org.getId()).forEach(r -> byName.put(r.getName(), r));
+        String[] weighted = {"Compensation", "Compensation", "Compensation", "Compensation", "Compensation", "Compensation",
+                "Career growth", "Career growth", "Career growth", "Career growth", "Career growth",
+                "Manager / leadership", "Manager / leadership", "Work-life balance", "Work-life balance",
+                "Relocation", "Higher studies", "Performance", "Layoff / restructuring", "End of contract", "Retirement"};
+        Map<Long, Double> deptWeight = Map.of(depts.get("Sales").getId(), 1.0, depts.get("Customer Support").getId(), 0.9);
+        List<Employee> pool = employees.findByOrgId(org.getId());
+        LocalDate first = LocalDate.of(2025, 1, 1);
+        int span = (int) (LocalDate.now().minusDays(3).toEpochDay() - first.toEpochDay());
+        int completed = 0;
+        int notice = 0;
+        while (completed < 55 || notice < 5) {
+            Employee e = pool.get(rnd.nextInt(pool.size()));
+            if (e.getStatus() != EmployeeStatus.ACTIVE || rnd.nextDouble() > deptWeight.getOrDefault(e.getDepartmentId(), 0.45)) {
+                continue;
+            }
+            boolean serving = completed >= 55;
+            LocalDate lastDay = serving ? LocalDate.now().plusDays(5 + rnd.nextInt(40)) : first.plusDays(rnd.nextInt(span));
+            LocalDate resigned = lastDay.minusDays(serving ? 20 + rnd.nextInt(10) : 30 + rnd.nextInt(30));
+            if (resigned.isBefore(e.getJoinDate().plusMonths(2))) {
+                continue;
+            }
+            ExitReason reason = byName.get(weighted[rnd.nextInt(weighted.length)]);
+            Separation.Type type = switch (reason.getCategory()) {
+                case VOLUNTARY -> Separation.Type.VOLUNTARY;
+                case INVOLUNTARY -> Separation.Type.INVOLUNTARY;
+                case OTHER -> reason.getName().equals("Retirement") ? Separation.Type.RETIREMENT : Separation.Type.END_OF_CONTRACT;
+            };
+            boolean regretted = type == Separation.Type.VOLUNTARY && e.getPerformanceRating() != null && e.getPerformanceRating() >= 4;
+            Separation sep = separations.save(new Separation(org.getId(), e.getId(), resigned, lastDay, type, reason.getId(),
+                    regretted, null, null));
+            e.setLastWorkingDay(lastDay);
+            e.setStatus(sep.getStatus() == Separation.Status.COMPLETED ? EmployeeStatus.SEPARATED : EmployeeStatus.NOTICE_PERIOD);
+            if (serving) notice++; else completed++;
+        }
     }
 
     /** Monthly snapshots since January 2025 so headcount history is available immediately. */
