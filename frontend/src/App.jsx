@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Layout, { RequirePage } from './components/Layout.jsx'
+import Employees from './pages/Employees.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Settings from './pages/Settings.jsx'
@@ -38,7 +39,7 @@ export default function App() {
         <Route path="register" element={<Register />} />
         <Route element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="employees" element={<RequirePage page="employees"><Placeholder title="Employees" /></RequirePage>} />
+          <Route path="employees" element={<RequirePage page="employees"><Employees /></RequirePage>} />
           <Route path="separations" element={<RequirePage page="separations"><Placeholder title="Separations" /></RequirePage>} />
           <Route path="settings" element={<Settings />} />
         </Route>
