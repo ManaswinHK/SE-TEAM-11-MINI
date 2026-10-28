@@ -112,8 +112,12 @@ public class DevDataSeeder implements CommandLineRunner {
                 continue;
             }
             boolean serving = completed >= 55;
-            LocalDate lastDay = serving ? LocalDate.now().plusDays(5 + rnd.nextInt(40)) : first.plusDays(rnd.nextInt(span));
-            LocalDate resigned = lastDay.minusDays(serving ? 20 + rnd.nextInt(10) : 30 + rnd.nextInt(30));
+            // People still serving notice resigned in the last three weeks and leave within the next one to six weeks.
+            LocalDate resigned = serving ? LocalDate.now().minusDays(1 + rnd.nextInt(20)) : null;
+            LocalDate lastDay = serving ? resigned.plusDays(30 + rnd.nextInt(14)) : first.plusDays(rnd.nextInt(span));
+            if (!serving) {
+                resigned = lastDay.minusDays(30 + rnd.nextInt(30));
+            }
             if (resigned.isBefore(e.getJoinDate().plusMonths(2))) {
                 continue;
             }
