@@ -1,18 +1,12 @@
 import { NavLink, Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
-
-const ROLE_LABEL = {
-  HR_ADMIN: 'HR Admin',
-  HR_MANAGER: 'HR Manager',
-  DEPT_MANAGER: 'Department Manager',
-  LEADERSHIP: 'Leadership',
-}
+import { PAGE_ROLES, ROLE_LABEL } from '../auth/roles.js'
 
 const NAV = [
-  { to: '/', label: 'Dashboard', end: true },
-  { to: '/employees', label: 'Employees' },
-  { to: '/separations', label: 'Separations' },
-  { to: '/settings', label: 'Settings' },
+  { to: '/', label: 'Dashboard', page: 'dashboard', end: true },
+  { to: '/employees', label: 'Employees', page: 'employees' },
+  { to: '/separations', label: 'Separations', page: 'separations' },
+  { to: '/settings', label: 'Settings', page: 'settings' },
 ]
 
 export default function Layout() {
@@ -27,7 +21,7 @@ export default function Layout() {
           <span>Attrition Analysis</span>
         </div>
         <nav>
-          {NAV.map((n) => (
+          {NAV.filter((n) => PAGE_ROLES[n.page].includes(user.role)).map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
               {n.label}
             </NavLink>
@@ -44,4 +38,10 @@ export default function Layout() {
       </main>
     </div>
   )
+}
+
+/** Route guard: users without access to a page are sent back to the dashboard. */
+export function RequirePage({ page, children }) {
+  const { user } = useAuth()
+  return PAGE_ROLES[page].includes(user?.role) ? children : <Navigate to="/" replace />
 }
