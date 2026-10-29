@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { api } from '../api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 
@@ -69,6 +69,7 @@ export default function Login() {
             </label>
             {error && <p className="error" role="alert">{error}</p>}
             <button className="btn primary block" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+            <Link className="btn link block center" to="/register">Register your organization</Link>
           </form>
         ) : (
           <form onSubmit={submitCode}>
