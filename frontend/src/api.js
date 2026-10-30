@@ -77,3 +77,16 @@ export async function api(path, options = {}) {
     throw e
   }
 }
+
+/** Downloads an authenticated file (e.g. CSV template) and saves it in the browser. */
+export async function download(path, filename) {
+  const token = await freshToken()
+  const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  if (!res.ok) throw new ApiError(res.status, null)
+  const url = URL.createObjectURL(await res.blob())
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
