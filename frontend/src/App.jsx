@@ -4,18 +4,10 @@ import Layout, { RequirePage } from './components/Layout.jsx'
 import Employees from './pages/Employees.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
+import Separations from './pages/Separations.jsx'
 import Settings from './pages/Settings.jsx'
 import { api } from './api.js'
 import { AuthProvider, useAuth } from './auth/AuthContext.jsx'
-
-function Placeholder({ title }) {
-  return (
-    <section>
-      <h1>{title}</h1>
-      <p className="muted">Coming in Sprint 1.</p>
-    </section>
-  )
-}
 
 function Home() {
   const { user } = useAuth()
@@ -40,7 +32,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="employees" element={<RequirePage page="employees"><Employees /></RequirePage>} />
-          <Route path="separations" element={<RequirePage page="separations"><Placeholder title="Separations" /></RequirePage>} />
+          <Route path="separations" element={<RequirePage page="separations"><Separations /></RequirePage>} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>

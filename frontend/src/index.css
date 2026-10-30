@@ -102,3 +102,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 .modal-backdrop { position: fixed; inset: 0; background: rgba(20, 33, 61, 0.45); display: grid; place-items: center; padding: 1rem; z-index: 10; }
 .modal { background: var(--surface); border-radius: 12px; padding: 1.25rem 1.5rem; width: 100%; max-width: 820px; max-height: 92vh; overflow-y: auto; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
+.scroll-y { max-height: 280px; overflow-y: auto; }
+
+/* Separation form */
+.suggestions { list-style: none; margin: 0.25rem 0 0; padding: 0; border: 1px solid var(--border); border-radius: 6px; max-height: 220px; overflow-y: auto; }
+.suggestions button { width: 100%; text-align: left; background: none; border: none; padding: 0.5rem 0.65rem; font: inherit; cursor: pointer; }
+.suggestions button:hover { background: var(--primary-soft); }
+.selected-employee { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.field-error { display: block; color: var(--danger); font-size: 0.8rem; margin-top: 0.25rem; font-weight: 400; }
+label.checkbox { display: flex; align-items: center; gap: 0.5rem; font-weight: 400; }
+label.checkbox input { width: auto; margin: 0; }
+label.inline { display: flex; align-items: center; gap: 0.4rem; margin: 0; font-weight: 400; color: var(--muted); }
+label.inline input { margin-top: 0; }
