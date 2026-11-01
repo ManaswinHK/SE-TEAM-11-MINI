@@ -5,6 +5,7 @@ import com.aas.auth.AppUserRepository;
 import com.aas.auth.Role;
 import com.aas.employee.Employee;
 import com.aas.employee.EmployeeRepository;
+import com.aas.employee.HeadcountService;
 import com.aas.org.Department;
 import com.aas.org.DepartmentRepository;
 import com.aas.org.OrgService;
@@ -35,15 +36,18 @@ public class DevDataSeeder implements CommandLineRunner {
     private final DepartmentRepository departments;
     private final AppUserRepository users;
     private final EmployeeRepository employees;
+    private final HeadcountService headcount;
     private final PasswordEncoder encoder;
 
     public DevDataSeeder(OrganizationRepository orgs, OrgService orgService, DepartmentRepository departments,
-                         AppUserRepository users, EmployeeRepository employees, PasswordEncoder encoder) {
+                         AppUserRepository users, EmployeeRepository employees, HeadcountService headcount,
+                         PasswordEncoder encoder) {
         this.orgs = orgs;
         this.orgService = orgService;
         this.departments = departments;
         this.users = users;
         this.employees = employees;
+        this.headcount = headcount;
         this.encoder = encoder;
     }
 
@@ -69,7 +73,15 @@ public class DevDataSeeder implements CommandLineRunner {
         users.save(manager);
         users.save(new AppUser(org.getId(), "ceo@acme.test", "Lakshmi Leadership", hash, Role.LEADERSHIP));
         seedEmployees(org, depts);
+        backfillSnapshots(org);
         log.info("Seeded demo organization 'Acme Technologies' (password for all demo users: {})", DEMO_PASSWORD);
+    }
+
+    /** Monthly snapshots since January 2025 so headcount history is available immediately. */
+    private void backfillSnapshots(Organization org) {
+        for (LocalDate d = LocalDate.of(2025, 1, 1); !d.isAfter(LocalDate.now()); d = d.plusMonths(1)) {
+            headcount.takeSnapshot(org.getId(), d);
+        }
     }
 
     private static final String[] FIRST = {"Aarav", "Aditi", "Akash", "Ananya", "Arjun", "Bhavna", "Chetan", "Deepa",
