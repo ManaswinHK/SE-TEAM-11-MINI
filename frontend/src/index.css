@@ -102,3 +102,4 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 .modal-backdrop { position: fixed; inset: 0; background: rgba(20, 33, 61, 0.45); display: grid; place-items: center; padding: 1rem; z-index: 10; }
 .modal { background: var(--surface); border-radius: 12px; padding: 1.25rem 1.5rem; width: 100%; max-width: 820px; max-height: 92vh; overflow-y: auto; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
+.scroll-y { max-height: 280px; overflow-y: auto; }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { STATUS_CLASS, STATUS_LABEL } from '../labels.js'
+import ImportDialog from './ImportDialog.jsx'
 
 const EMPTY = {
   employeeCode: '', fullName: '', email: '', departmentId: '', designation: '', managerName: '', location: '',
@@ -98,6 +99,7 @@ export default function Employees() {
   const [page, setPage] = useState(0)
   const [data, setData] = useState(null)
   const [editing, setEditing] = useState(null)
+  const [importing, setImporting] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -131,6 +133,7 @@ export default function Employees() {
         <h1>Employees</h1>
         {canEdit && (
           <div className="actions">
+            <button className="btn" onClick={() => setImporting(true)}>Import CSV</button>
             <button className="btn primary" onClick={() => setEditing(EMPTY)}>Add employee</button>
           </div>
         )}
@@ -192,6 +195,7 @@ export default function Employees() {
         {data && data.totalPages <= 1 && <p className="muted small">{data.totalElements} employees</p>}
       </div>
 
+      {importing && <ImportDialog onClose={() => setImporting(false)} onImported={load} />}
       {editing && (
         <EmployeeForm
           initial={editing}
