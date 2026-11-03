@@ -39,15 +39,18 @@ public class SeparationService {
     private final DepartmentRepository departments;
     private final AuditLogRepository audit;
     private final AccessScope scope;
+    private final ClearanceService clearance;
 
     public SeparationService(SeparationRepository separations, EmployeeRepository employees, ExitReasonRepository reasons,
-                             DepartmentRepository departments, AuditLogRepository audit, AccessScope scope) {
+                             DepartmentRepository departments, AuditLogRepository audit, AccessScope scope,
+                             ClearanceService clearance) {
         this.separations = separations;
         this.employees = employees;
         this.reasons = reasons;
         this.departments = departments;
         this.audit = audit;
         this.scope = scope;
+        this.clearance = clearance;
     }
 
     @Transactional
@@ -78,6 +81,7 @@ public class SeparationService {
                 req.type(), reason.getId(), req.regretted(), blankToNull(req.remarks()), user.userId()));
         emp.setLastWorkingDay(req.lastWorkingDay());
         emp.setStatus(s.getStatus() == Separation.Status.COMPLETED ? EmployeeStatus.SEPARATED : EmployeeStatus.NOTICE_PERIOD);
+        clearance.createDefaults(s);
 
         audit.save(new AuditLog(user.orgId(), user.userId(), user.email(), "CREATE", "SEPARATION", s.getId(),
                 "Employee " + emp.getEmployeeCode() + ", " + req.type() + ", last working day " + req.lastWorkingDay()));

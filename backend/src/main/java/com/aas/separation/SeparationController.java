@@ -2,6 +2,7 @@ package com.aas.separation;
 
 import com.aas.auth.CurrentUser;
 import com.aas.common.ApiException;
+import com.aas.separation.ClearanceService.Checklist;
 import com.aas.separation.SeparationDtos.SeparationRequest;
 import com.aas.separation.SeparationDtos.SeparationView;
 import jakarta.validation.Valid;
@@ -13,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,9 +26,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class SeparationController {
 
     private final SeparationService service;
+    private final ClearanceService clearance;
 
-    public SeparationController(SeparationService service) {
+    public SeparationController(SeparationService service, ClearanceService clearance) {
         this.service = service;
+        this.clearance = clearance;
     }
 
     @PostMapping
@@ -55,5 +59,26 @@ public class SeparationController {
     @PreAuthorize("hasAnyRole('HR_ADMIN','HR_MANAGER','DEPT_MANAGER')")
     public SeparationView get(@PathVariable Long id) {
         return service.get(CurrentUser.get(), id);
+    }
+
+    public record MarkRequest(boolean done) {
+    }
+
+    @GetMapping("/{id}/clearance")
+    @PreAuthorize("hasAnyRole('HR_ADMIN','HR_MANAGER','DEPT_MANAGER')")
+    public Checklist clearance(@PathVariable Long id) {
+        return clearance.checklist(CurrentUser.get(), id);
+    }
+
+    @PutMapping("/{id}/clearance/{itemId}")
+    @PreAuthorize("hasAnyRole('HR_ADMIN','HR_MANAGER')")
+    public Checklist mark(@PathVariable Long id, @PathVariable Long itemId, @RequestBody MarkRequest req) {
+        return clearance.mark(CurrentUser.get(), id, itemId, req.done());
+    }
+
+    @PostMapping("/{id}/close")
+    @PreAuthorize("hasAnyRole('HR_ADMIN','HR_MANAGER')")
+    public Checklist close(@PathVariable Long id) {
+        return clearance.close(CurrentUser.get(), id);
     }
 }

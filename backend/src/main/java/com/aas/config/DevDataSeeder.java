@@ -14,6 +14,8 @@ import com.aas.org.ExitReasonRepository;
 import com.aas.org.OrgService;
 import com.aas.org.Organization;
 import com.aas.org.OrganizationRepository;
+import com.aas.separation.ClearanceItem;
+import com.aas.separation.ClearanceService;
 import com.aas.separation.Separation;
 import com.aas.separation.SeparationRepository;
 import java.time.LocalDate;
@@ -46,10 +48,13 @@ public class DevDataSeeder implements CommandLineRunner {
     private final ExitReasonRepository reasons;
     private final SeparationRepository separations;
     private final PasswordEncoder encoder;
+    private final ClearanceService clearance;
 
     public DevDataSeeder(OrganizationRepository orgs, OrgService orgService, DepartmentRepository departments,
                          AppUserRepository users, EmployeeRepository employees, HeadcountService headcount,
-                         ExitReasonRepository reasons, SeparationRepository separations, PasswordEncoder encoder) {
+                         ExitReasonRepository reasons, SeparationRepository separations, PasswordEncoder encoder,
+                         ClearanceService clearance) {
+        this.clearance = clearance;
         this.orgs = orgs;
         this.orgService = orgService;
         this.departments = departments;
@@ -132,6 +137,14 @@ public class DevDataSeeder implements CommandLineRunner {
                     regretted, null, null));
             e.setLastWorkingDay(lastDay);
             e.setStatus(sep.getStatus() == Separation.Status.COMPLETED ? EmployeeStatus.SEPARATED : EmployeeStatus.NOTICE_PERIOD);
+            // Exits more than a month ago have finished clearance; recent ones are still in progress.
+            List<ClearanceItem> checklist = clearance.createDefaults(sep);
+            if (lastDay.isBefore(LocalDate.now().minusDays(30))) {
+                checklist.forEach(i -> i.mark(true, null));
+                sep.close();
+            } else if (!serving) {
+                checklist.stream().limit(2 + sep.getId() % 2).forEach(i -> i.mark(true, null));
+            }
             if (serving) notice++; else completed++;
         }
     }
