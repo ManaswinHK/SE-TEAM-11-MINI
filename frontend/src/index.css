@@ -111,6 +111,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 .checklist { list-style: none; margin: 0 0 1rem; padding: 0; }
 .checklist li { padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
 .checklist li:last-child { border-bottom: none; }
+.row-actions { white-space: nowrap; }
+.row-actions .btn + .btn { margin-left: 0.5rem; }
 .selected-employee { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .field-error { display: block; color: var(--danger); font-size: 0.8rem; margin-top: 0.25rem; font-weight: 400; }
 label.checkbox { display: flex; align-items: center; gap: 0.5rem; font-weight: 400; }
