@@ -2,6 +2,8 @@ package com.aas.analytics;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.Period;
 
 /** The attrition formula from the SRS: separations in period / average headcount in period x 100. */
 public final class AttritionCalculator {
@@ -20,6 +22,11 @@ public final class AttritionCalculator {
         }
         return BigDecimal.valueOf(separations).multiply(BigDecimal.valueOf(100))
                 .divide(averageHeadcount, 2, RoundingMode.HALF_UP);
+    }
+
+    /** Early attrition (AAS-F-044): the person left less than 12 months after joining. */
+    public static boolean isEarlyExit(LocalDate joinDate, LocalDate lastWorkingDay) {
+        return Period.between(joinDate, lastWorkingDay).toTotalMonths() < 12;
     }
 
     /** Tenure band at exit used in breakdowns (AAS-F-041). */
