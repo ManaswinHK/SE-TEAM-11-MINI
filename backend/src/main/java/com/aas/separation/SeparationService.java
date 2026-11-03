@@ -115,6 +115,26 @@ public class SeparationService {
                 reasons.findById(s.getReasonId()).map(ExitReason::getName).orElse(null));
     }
 
+    /**
+     * The employee changed their mind during the notice period (AAS-F-023): they become active again and the
+     * separation stays on record as withdrawn, so attrition figures do not change.
+     */
+    @Transactional
+    public SeparationView withdraw(CurrentUser user, Long id, String note) {
+        Separation s = separations.findByIdAndOrgId(id, user.orgId()).orElseThrow(() -> ApiException.notFound("Separation"));
+        if (s.getStatus() != Separation.Status.NOTICE_PERIOD) {
+            throw ApiException.conflict("Only a resignation still in its notice period can be withdrawn");
+        }
+        Employee e = employees.findByIdAndOrgId(s.getEmployeeId(), user.orgId()).orElseThrow();
+        s.withdraw(blankToNull(note));
+        e.setStatus(EmployeeStatus.ACTIVE);
+        e.setLastWorkingDay(null);
+        audit.save(new AuditLog(user.orgId(), user.userId(), user.email(), "WITHDRAW", "SEPARATION", s.getId(),
+                "Employee " + e.getEmployeeCode() + " retained"));
+        return view(s, e, departments.findById(e.getDepartmentId()).map(Department::getName).orElse(null),
+                reasons.findById(s.getReasonId()).map(ExitReason::getName).orElse(null));
+    }
+
     /** Daily: people whose last working day has passed move from notice period to separated. */
     @Scheduled(cron = "${aas.separation.complete-cron:0 10 0 * * *}")
     @Transactional

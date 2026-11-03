@@ -6,6 +6,7 @@ import com.aas.separation.ClearanceService.Checklist;
 import com.aas.separation.SeparationDtos.SeparationRequest;
 import com.aas.separation.SeparationDtos.SeparationView;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -59,6 +60,15 @@ public class SeparationController {
     @PreAuthorize("hasAnyRole('HR_ADMIN','HR_MANAGER','DEPT_MANAGER')")
     public SeparationView get(@PathVariable Long id) {
         return service.get(CurrentUser.get(), id);
+    }
+
+    public record WithdrawRequest(@Size(max = 500) String note) {
+    }
+
+    @PostMapping("/{id}/withdraw")
+    @PreAuthorize("hasAnyRole('HR_ADMIN','HR_MANAGER')")
+    public SeparationView withdraw(@PathVariable Long id, @Valid @RequestBody(required = false) WithdrawRequest req) {
+        return service.withdraw(CurrentUser.get(), id, req == null ? null : req.note());
     }
 
     public record MarkRequest(boolean done) {

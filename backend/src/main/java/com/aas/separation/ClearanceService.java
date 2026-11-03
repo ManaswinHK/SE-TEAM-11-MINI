@@ -59,9 +59,7 @@ public class ClearanceService {
     @Transactional
     public Checklist mark(CurrentUser user, Long separationId, Long itemId, boolean done) {
         Separation s = load(user, separationId);
-        if (s.getStatus() == Separation.Status.CLOSED) {
-            throw ApiException.conflict("This separation is already closed");
-        }
+        requireOpen(s);
         ClearanceItem item = items.findByIdAndSeparationId(itemId, s.getId())
                 .orElseThrow(() -> ApiException.notFound("Clearance item"));
         item.mark(done, user.userId());
@@ -74,9 +72,7 @@ public class ClearanceService {
     @Transactional
     public Checklist close(CurrentUser user, Long separationId) {
         Separation s = load(user, separationId);
-        if (s.getStatus() == Separation.Status.CLOSED) {
-            throw ApiException.conflict("This separation is already closed");
-        }
+        requireOpen(s);
         if (s.getStatus() != Separation.Status.COMPLETED) {
             throw ApiException.conflict("A separation can be closed only after the last working day (" + s.getLastWorkingDay() + ")");
         }
@@ -89,6 +85,15 @@ public class ClearanceService {
         audit.save(new AuditLog(user.orgId(), user.userId(), user.email(), "CLOSE", "SEPARATION", s.getId(),
                 "All clearance items done"));
         return checklist(s);
+    }
+
+    private static void requireOpen(Separation s) {
+        if (s.getStatus() == Separation.Status.CLOSED) {
+            throw ApiException.conflict("This separation is already closed");
+        }
+        if (s.getStatus() == Separation.Status.WITHDRAWN) {
+            throw ApiException.conflict("This resignation was withdrawn; no clearance is needed");
+        }
     }
 
     private Separation load(CurrentUser user, Long separationId) {

@@ -74,7 +74,8 @@ public class AnalyticsService {
         Map<Long, Employee> byId = people.stream().collect(Collectors.toMap(Employee::getId, Function.identity()));
         List<Separation> exits = effectiveTo.isBefore(from) ? List.of()
                 : separations.findByOrgIdAndLastWorkingDayBetweenOrderByLastWorkingDayDesc(user.orgId(), from, effectiveTo)
-                        .stream().filter(s -> byId.containsKey(s.getEmployeeId())).toList();
+                        .stream().filter(Separation::countsAsAttrition)
+                        .filter(s -> byId.containsKey(s.getEmployeeId())).toList();
 
         Kpis kpis = kpis(from, effectiveTo, people, exits);
 

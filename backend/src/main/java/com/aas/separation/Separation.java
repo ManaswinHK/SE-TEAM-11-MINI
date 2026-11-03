@@ -21,7 +21,9 @@ public class Separation {
         /** Last working day has passed. */
         COMPLETED,
         /** Left and every exit clearance item is done (AAS-F-022). */
-        CLOSED
+        CLOSED,
+        /** Resignation withdrawn during the notice period; the person stays (AAS-F-023). Not attrition. */
+        WITHDRAWN
     }
 
     @Id
@@ -60,6 +62,7 @@ public class Separation {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     private LocalDateTime closedAt;
+    private LocalDateTime withdrawnAt;
 
     protected Separation() {
     }
@@ -93,8 +96,24 @@ public class Separation {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getClosedAt() { return closedAt; }
 
+    public LocalDateTime getWithdrawnAt() { return withdrawnAt; }
+
+    /** True unless the resignation was withdrawn; withdrawn separations never count towards attrition. */
+    public boolean countsAsAttrition() {
+        return status != Status.WITHDRAWN;
+    }
+
     public void close() {
         this.status = Status.CLOSED;
         this.closedAt = LocalDateTime.now();
+    }
+
+    public void withdraw(String note) {
+        this.status = Status.WITHDRAWN;
+        this.withdrawnAt = LocalDateTime.now();
+        if (note != null) {
+            String text = remarks == null ? "Withdrawn: " + note : remarks + "\nWithdrawn: " + note;
+            this.remarks = text.length() > 1000 ? text.substring(0, 1000) : text;
+        }
     }
 }

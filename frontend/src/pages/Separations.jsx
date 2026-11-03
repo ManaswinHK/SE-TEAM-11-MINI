@@ -115,6 +115,43 @@ function RecordForm({ reasons, onCancel, onSaved }) {
   )
 }
 
+// Withdrawing a resignation during the notice period (AAS-F-023): the person stays and attrition is unchanged.
+function WithdrawDialog({ separation, onCancel, onSaved }) {
+  const [note, setNote] = useState('')
+  const [error, setError] = useState('')
+
+  async function submit(e) {
+    e.preventDefault()
+    setError('')
+    try {
+      onSaved(await api(`/api/separations/${separation.id}/withdraw`, { method: 'POST', body: { note } }))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal="true">
+      <form className="modal" onSubmit={submit}>
+        <h2>Withdraw resignation</h2>
+        <p>
+          {separation.employeeName} will be marked active again and this exit will not count towards attrition.
+        </p>
+        <label>
+          Note (optional)
+          <textarea rows={2} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder="e.g. Accepted counter-offer" />
+        </label>
+        {error && <p className="error" role="alert">{error}</p>}
+        <div className="modal-actions">
+          <button type="button" className="btn" onClick={onCancel}>Cancel</button>
+          <button className="btn primary">Withdraw resignation</button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
 export default function Separations() {
   const { hasRole } = useAuth()
   const canRecord = hasRole('HR_ADMIN', 'HR_MANAGER')
@@ -127,6 +164,7 @@ export default function Separations() {
   const [rows, setRows] = useState(null)
   const [recording, setRecording] = useState(false)
   const [clearanceFor, setClearanceFor] = useState(null)
+  const [withdrawing, setWithdrawing] = useState(null)
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
@@ -185,7 +223,12 @@ export default function Separations() {
                   <td>{s.reasonName}</td>
                   <td>{s.regretted ? 'Yes' : 'No'}</td>
                   <td><span className={SEPARATION_STATUS_CLASS[s.status]}>{SEPARATION_STATUS[s.status]}</span></td>
-                  <td><button className="btn link" onClick={() => setClearanceFor(s)}>Clearance</button></td>
+                  <td className="row-actions">
+                    {s.status !== 'WITHDRAWN' && <button className="btn link" onClick={() => setClearanceFor(s)}>Clearance</button>}
+                    {canRecord && s.status === 'NOTICE_PERIOD' && (
+                      <button className="btn link" onClick={() => setWithdrawing(s)}>Withdraw</button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {rows && rows.length === 0 && <tr><td colSpan={10} className="muted">No separations in this period.</td></tr>}
@@ -194,6 +237,17 @@ export default function Separations() {
         </div>
         {rows && <p className="muted small">{rows.length} separations</p>}
       </div>
+      {withdrawing && (
+        <WithdrawDialog
+          separation={withdrawing}
+          onCancel={() => setWithdrawing(null)}
+          onSaved={(s) => {
+            setWithdrawing(null)
+            setNotice(`Resignation withdrawn: ${s.employeeName} is active again.`)
+            load()
+          }}
+        />
+      )}
       {clearanceFor && (
         <ClearanceDialog
           separation={clearanceFor}
