@@ -19,7 +19,9 @@ public class Separation {
         /** Resigned / notified, still working until the last working day. */
         NOTICE_PERIOD,
         /** Last working day has passed. */
-        COMPLETED
+        COMPLETED,
+        /** Left and every exit clearance item is done (AAS-F-022). */
+        CLOSED
     }
 
     @Id
@@ -57,6 +59,8 @@ public class Separation {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    private LocalDateTime closedAt;
+
     protected Separation() {
     }
 
@@ -87,4 +91,10 @@ public class Separation {
     public String getRemarks() { return remarks; }
     public Long getRecordedBy() { return recordedBy; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getClosedAt() { return closedAt; }
+
+    public void close() {
+        this.status = Status.CLOSED;
+        this.closedAt = LocalDateTime.now();
+    }
 }

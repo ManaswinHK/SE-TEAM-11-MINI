@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
-import { SEPARATION_STATUS, SEPARATION_TYPE } from '../labels.js'
+import { SEPARATION_STATUS, SEPARATION_STATUS_CLASS, SEPARATION_TYPE } from '../labels.js'
+import ClearanceDialog from './ClearanceDialog.jsx'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -125,6 +126,7 @@ export default function Separations() {
   const [reasons, setReasons] = useState([])
   const [rows, setRows] = useState(null)
   const [recording, setRecording] = useState(false)
+  const [clearanceFor, setClearanceFor] = useState(null)
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
@@ -168,7 +170,7 @@ export default function Separations() {
           <table className="table">
             <thead>
               <tr>
-                <th>Employee</th><th>Department</th><th>Resigned</th><th>Last day</th><th>Tenure</th><th>Type</th><th>Reason</th><th>Regretted</th><th>Status</th>
+                <th>Employee</th><th>Department</th><th>Resigned</th><th>Last day</th><th>Tenure</th><th>Type</th><th>Reason</th><th>Regretted</th><th>Status</th><th />
               </tr>
             </thead>
             <tbody>
@@ -182,15 +184,24 @@ export default function Separations() {
                   <td>{SEPARATION_TYPE[s.type]}</td>
                   <td>{s.reasonName}</td>
                   <td>{s.regretted ? 'Yes' : 'No'}</td>
-                  <td><span className={s.status === 'COMPLETED' ? 'badge danger' : 'badge warn'}>{SEPARATION_STATUS[s.status]}</span></td>
+                  <td><span className={SEPARATION_STATUS_CLASS[s.status]}>{SEPARATION_STATUS[s.status]}</span></td>
+                  <td><button className="btn link" onClick={() => setClearanceFor(s)}>Clearance</button></td>
                 </tr>
               ))}
-              {rows && rows.length === 0 && <tr><td colSpan={9} className="muted">No separations in this period.</td></tr>}
+              {rows && rows.length === 0 && <tr><td colSpan={10} className="muted">No separations in this period.</td></tr>}
             </tbody>
           </table>
         </div>
         {rows && <p className="muted small">{rows.length} separations</p>}
       </div>
+      {clearanceFor && (
+        <ClearanceDialog
+          separation={clearanceFor}
+          canEdit={canRecord}
+          onClose={() => setClearanceFor(null)}
+          onChanged={load}
+        />
+      )}
       {recording && (
         <RecordForm
           reasons={reasons}

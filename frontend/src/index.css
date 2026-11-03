@@ -108,6 +108,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 .suggestions { list-style: none; margin: 0.25rem 0 0; padding: 0; border: 1px solid var(--border); border-radius: 6px; max-height: 220px; overflow-y: auto; }
 .suggestions button { width: 100%; text-align: left; background: none; border: none; padding: 0.5rem 0.65rem; font: inherit; cursor: pointer; }
 .suggestions button:hover { background: var(--primary-soft); }
+.checklist { list-style: none; margin: 0 0 1rem; padding: 0; }
+.checklist li { padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
+.checklist li:last-child { border-bottom: none; }
 .selected-employee { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .field-error { display: block; color: var(--danger); font-size: 0.8rem; margin-top: 0.25rem; font-weight: 400; }
 label.checkbox { display: flex; align-items: center; gap: 0.5rem; font-weight: 400; }
