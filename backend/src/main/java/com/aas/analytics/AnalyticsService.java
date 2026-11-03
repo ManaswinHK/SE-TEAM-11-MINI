@@ -31,9 +31,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class AnalyticsService {
 
+    /** earlyLeavers: people who left within their first 12 months (AAS-F-044). */
     public record Kpis(LocalDate from, LocalDate to, int openingHeadcount, int closingHeadcount, BigDecimal averageHeadcount,
-                       long separations, long voluntary, long regretted, BigDecimal attritionRate,
-                       BigDecimal voluntaryRate, BigDecimal regrettedRate) {
+                       long separations, long voluntary, long regretted, long earlyLeavers, BigDecimal attritionRate,
+                       BigDecimal voluntaryRate, BigDecimal regrettedRate, BigDecimal earlyAttritionRate,
+                       BigDecimal earlyLeaverShare) {
     }
 
     public record GroupRow(String key, long separations, BigDecimal averageHeadcount, BigDecimal attritionRate) {
@@ -152,9 +154,14 @@ public class AnalyticsService {
         BigDecimal avg = AttritionCalculator.averageHeadcount(opening, closing);
         long voluntary = exits.stream().filter(s -> s.getType() == Separation.Type.VOLUNTARY).count();
         long regretted = exits.stream().filter(Separation::isRegretted).count();
-        return new Kpis(from, to, opening, closing, avg, exits.size(), voluntary, regretted,
+        Map<Long, LocalDate> joined = people.stream().collect(Collectors.toMap(Employee::getId, Employee::getJoinDate));
+        long early = exits.stream()
+                .filter(s -> AttritionCalculator.isEarlyExit(joined.get(s.getEmployeeId()), s.getLastWorkingDay()))
+                .count();
+        return new Kpis(from, to, opening, closing, avg, exits.size(), voluntary, regretted, early,
                 AttritionCalculator.rate(exits.size(), avg), AttritionCalculator.rate(voluntary, avg),
-                AttritionCalculator.rate(regretted, avg));
+                AttritionCalculator.rate(regretted, avg), AttritionCalculator.rate(early, avg),
+                AttritionCalculator.rate(early, BigDecimal.valueOf(exits.size())));
     }
 
     private static List<GroupRow> groups(List<Employee> people, List<Separation> exits, Map<Long, Employee> byId,

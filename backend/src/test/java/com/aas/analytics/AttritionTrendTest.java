@@ -90,6 +90,28 @@ class AttritionTrendTest {
                 .andExpect(jsonPath("$[10].separations").value(0));
     }
 
+    /**
+     * TC-ANA-05: of 4 leavers in May 2026, 3 joined in the previous 12 months, so 75% of leavers are early
+     * leavers; the early-attrition rate is 3 / average headcount.
+     */
+    @Test
+    void earlyAttritionCountsLeaversWithUnderOneYearTenure() throws Exception {
+        Department ops = departments.save(new Department(org.getId(), "Ops", "Pune"));
+        List<Employee> recent = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            recent.add(employees.save(new Employee(org.getId(), "R" + i, "Recent " + i, ops.getId(), LocalDate.of(2025, 11, 1))));
+        }
+        recent.forEach(e -> leave(e, LocalDate.of(2026, 5, 20)));  // 6 months and 19 days of tenure
+        leave(staff.get(0), LocalDate.of(2026, 5, 20));          // joined 2020
+
+        // 103 at the start of May, 99 at the end: average 101; 3 / 101 = 2.97%
+        mvc.perform(get("/api/analytics/attrition?from=2026-05-01&to=2026-05-31").header("Authorization", bearer(hr)))
+                .andExpect(jsonPath("$.kpis.separations").value(4))
+                .andExpect(jsonPath("$.kpis.earlyLeavers").value(3))
+                .andExpect(jsonPath("$.kpis.earlyLeaverShare").value(75.0))
+                .andExpect(jsonPath("$.kpis.earlyAttritionRate").value(2.97));
+    }
+
     @Test
     void rejectsOutOfRangeMonths() throws Exception {
         mvc.perform(get("/api/analytics/trend?months=0").header("Authorization", bearer(hr)))

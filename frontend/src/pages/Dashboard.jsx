@@ -192,6 +192,7 @@ export default function Dashboard() {
             <Kpi label="Attrition rate" value={`${k.attritionRate.toFixed(2)}%`} hint={`${k.separations} left ÷ ${k.averageHeadcount} avg headcount`} />
             <Kpi label="Voluntary attrition" value={`${k.voluntaryRate.toFixed(2)}%`} hint={`${k.voluntary} resignations`} />
             <Kpi label="Regretted attrition" value={`${k.regrettedRate.toFixed(2)}%`} hint={`${k.regretted} people we wanted to keep`} />
+            <Kpi label="Early attrition" value={`${k.earlyAttritionRate.toFixed(2)}%`} hint={`${k.earlyLeavers} left within a year (${k.earlyLeaverShare}% of leavers)`} />
             <Kpi label="Headcount" value={k.closingHeadcount} hint={`${k.openingHeadcount} at start of period`} />
           </div>
 
