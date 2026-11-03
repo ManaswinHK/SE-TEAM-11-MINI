@@ -19,7 +19,7 @@ test('signed-in users see the navigation with their role', () => {
     accessToken: 't', expiresAt: Date.now() + 30 * 60 * 1000,
     user: { fullName: 'Hari', role: 'HR_MANAGER', orgName: 'Acme' },
   }))
-  globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, text: () => Promise.resolve('{"status":"UP"}') })
+  globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, text: () => Promise.resolve('[]') })
   render(
     <MemoryRouter initialEntries={['/']}>
       <App />
@@ -27,6 +27,7 @@ test('signed-in users see the navigation with their role', () => {
   )
   expect(screen.getByRole('link', { name: 'Employees' })).toBeInTheDocument()
   expect(screen.getByText(/HR Manager · Acme/)).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Attrition dashboard' })).toBeInTheDocument()
 })
 
 test('leadership does not see employee-level pages', () => {
@@ -34,7 +35,7 @@ test('leadership does not see employee-level pages', () => {
     accessToken: 't', expiresAt: Date.now() + 30 * 60 * 1000,
     user: { fullName: 'Lakshmi', role: 'LEADERSHIP', orgName: 'Acme' },
   }))
-  globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, text: () => Promise.resolve('{"status":"UP"}') })
+  globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, text: () => Promise.resolve('[]') })
   render(
     <MemoryRouter initialEntries={['/employees']}>
       <App />
@@ -42,5 +43,5 @@ test('leadership does not see employee-level pages', () => {
   )
   expect(screen.queryByRole('link', { name: 'Employees' })).not.toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
-  expect(screen.getByText(/Welcome, Lakshmi/)).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Attrition dashboard' })).toBeInTheDocument()
 })
