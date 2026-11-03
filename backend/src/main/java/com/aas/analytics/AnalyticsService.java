@@ -12,6 +12,7 @@ import com.aas.separation.SeparationRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -43,6 +44,11 @@ public class AnalyticsService {
 
     public record AttritionReport(Kpis kpis, Long departmentId, List<GroupRow> byDepartment, List<BandRow> byTenure,
                                   List<GroupRow> byLocation) {
+    }
+
+    /** One calendar month of the trend chart, with the same month a year earlier for comparison (AAS-F-042). */
+    public record TrendPoint(String month, long separations, BigDecimal averageHeadcount, BigDecimal attritionRate,
+                             long previousYearSeparations, BigDecimal previousYearRate) {
     }
 
     static final List<String> BANDS = List.of("< 1 year", "1-3 years", "3-5 years", "> 5 years");
@@ -99,6 +105,45 @@ public class AnalyticsService {
                 .toList();
 
         return new AttritionReport(kpis, dept, byDepartment, byTenure, byLocation);
+    }
+
+    /** Monthly attrition rate for the last {@code months} calendar months (the current month runs to today). */
+    public List<TrendPoint> trend(CurrentUser user, int months, Long departmentId) {
+        if (months < 1 || months > 24) {
+            throw ApiException.badRequest("months must be between 1 and 24");
+        }
+        Long dept = scope.departmentFilter(user, departmentId);
+        LocalDate today = LocalDate.now();
+        YearMonth last = YearMonth.from(today);
+        YearMonth first = last.minusMonths(months - 1);
+
+        List<Employee> people = employees.findByOrgId(user.orgId()).stream()
+                .filter(e -> dept == null || dept.equals(e.getDepartmentId()))
+                .toList();
+        Map<Long, Employee> byId = people.stream().collect(Collectors.toMap(Employee::getId, Function.identity()));
+        List<Separation> exits = separations.findByOrgIdAndLastWorkingDayBetweenOrderByLastWorkingDayDesc(
+                        user.orgId(), first.minusYears(1).atDay(1), today).stream()
+                .filter(Separation::countsAsAttrition)
+                .filter(s -> byId.containsKey(s.getEmployeeId()))
+                .toList();
+
+        List<TrendPoint> points = new ArrayList<>();
+        for (YearMonth m = first; !m.isAfter(last); m = m.plusMonths(1)) {
+            Kpis now = monthKpis(m, today, people, exits);
+            Kpis before = monthKpis(m.minusYears(1), today, people, exits);
+            points.add(new TrendPoint(m.toString(), now.separations(), now.averageHeadcount(), now.attritionRate(),
+                    before.separations(), before.attritionRate()));
+        }
+        return points;
+    }
+
+    private static Kpis monthKpis(YearMonth month, LocalDate today, List<Employee> people, List<Separation> exits) {
+        LocalDate from = month.atDay(1);
+        LocalDate to = month.atEndOfMonth().isAfter(today) ? today : month.atEndOfMonth();
+        List<Separation> inMonth = exits.stream()
+                .filter(s -> !s.getLastWorkingDay().isBefore(from) && !s.getLastWorkingDay().isAfter(to))
+                .toList();
+        return kpis(from, to, people, inMonth);
     }
 
     private static Kpis kpis(LocalDate from, LocalDate to, List<Employee> people, List<Separation> exits) {

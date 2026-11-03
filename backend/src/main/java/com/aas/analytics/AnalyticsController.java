@@ -1,8 +1,10 @@
 package com.aas.analytics;
 
 import com.aas.analytics.AnalyticsService.AttritionReport;
+import com.aas.analytics.AnalyticsService.TrendPoint;
 import com.aas.auth.CurrentUser;
 import java.time.LocalDate;
+import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,5 +29,12 @@ public class AnalyticsController {
         LocalDate end = to != null ? to : LocalDate.now();
         LocalDate start = from != null ? from : end.withDayOfYear(1);
         return service.attrition(CurrentUser.get(), start, end, departmentId);
+    }
+
+    /** Monthly attrition trend compared with the previous year (AAS-F-042). */
+    @GetMapping("/trend")
+    public List<TrendPoint> trend(@RequestParam(defaultValue = "12") int months,
+                                  @RequestParam(required = false) Long departmentId) {
+        return service.trend(CurrentUser.get(), months, departmentId);
     }
 }

@@ -1,14 +1,53 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BarElement, CategoryScale, Chart as ChartJS, LinearScale, Tooltip } from 'chart.js'
-import { Bar } from 'react-chartjs-2'
+import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, LineElement, PointElement, Tooltip } from 'chart.js'
+import { Bar, Line } from 'react-chartjs-2'
 import { api } from '../api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip)
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Legend, Tooltip)
 
 const BAR = '#2459d6'
 const GRID = '#e3e7ef'
 const INK = '#667085'
+const PREVIOUS = '#98a2b3'
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+const monthLabel = (ym) => `${MONTHS[Number(ym.slice(5, 7)) - 1]} ${ym.slice(2, 4)}`
+
+// 12-month trend against the same months a year earlier (AAS-F-042).
+function TrendChart({ points }) {
+  const data = {
+    // The current month is still running, so its point covers only the days so far.
+    labels: points.map((p, i) => (i === points.length - 1 ? `${monthLabel(p.month)} (to date)` : monthLabel(p.month))),
+    datasets: [
+      { label: 'Last 12 months', data: points.map((p) => p.attritionRate), borderColor: BAR, backgroundColor: BAR, tension: 0.25, pointRadius: 3 },
+      { label: 'Previous year', data: points.map((p) => p.previousYearRate), borderColor: PREVIOUS, backgroundColor: PREVIOUS, borderDash: [5, 4], tension: 0.25, pointRadius: 2 },
+    ],
+  }
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'bottom', labels: { color: INK, boxWidth: 12 } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const p = points[ctx.dataIndex]
+            return ctx.datasetIndex === 0
+              ? `This year: ${p.attritionRate}% (${p.separations} left)`
+              : `Previous year: ${p.previousYearRate}% (${p.previousYearSeparations} left)`
+          },
+        },
+      },
+    },
+    scales: {
+      x: { grid: { display: false }, border: { color: GRID }, ticks: { color: INK } },
+      y: { beginAtZero: true, grid: { color: GRID }, border: { display: false }, ticks: { color: INK, callback: (v) => `${v}%` } },
+    },
+  }
+  return <Line data={data} options={options} />
+}
 
 function iso(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -81,6 +120,7 @@ export default function Dashboard() {
   const [departmentId, setDepartmentId] = useState('')
   const [departments, setDepartments] = useState([])
   const [report, setReport] = useState(null)
+  const [trend, setTrend] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -97,6 +137,11 @@ export default function Dashboard() {
       })
       .catch((err) => setError(err.message))
   }, [range, departmentId])
+
+  // The trend always covers the last 12 months, whatever period the KPIs show.
+  useEffect(() => {
+    api(`/api/analytics/trend?months=12${departmentId ? `&departmentId=${departmentId}` : ''}`).then(setTrend)
+  }, [departmentId])
 
   const deptName = useMemo(() => {
     const id = report?.departmentId
@@ -149,6 +194,15 @@ export default function Dashboard() {
             <Kpi label="Regretted attrition" value={`${k.regrettedRate.toFixed(2)}%`} hint={`${k.regretted} people we wanted to keep`} />
             <Kpi label="Headcount" value={k.closingHeadcount} hint={`${k.openingHeadcount} at start of period`} />
           </div>
+
+          {trend && (
+            <div className="card">
+              <h2>Monthly attrition, last 12 months vs previous year</h2>
+              <div className="chart" style={{ height: 260 }}>
+                <TrendChart points={trend} />
+              </div>
+            </div>
+          )}
 
           <div className="grid-2">
             {!report.departmentId && (
