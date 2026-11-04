@@ -1,6 +1,7 @@
 package com.aas.analytics;
 
 import com.aas.analytics.AnalyticsService.AttritionReport;
+import com.aas.analytics.AnalyticsService.ExitInsights;
 import com.aas.analytics.AnalyticsService.TrendPoint;
 import com.aas.auth.CurrentUser;
 import java.time.LocalDate;
@@ -29,6 +30,16 @@ public class AnalyticsController {
         LocalDate end = to != null ? to : LocalDate.now();
         LocalDate start = from != null ? from : end.withDayOfYear(1);
         return service.attrition(CurrentUser.get(), start, end, departmentId);
+    }
+
+    /** Exit reasons ranked by frequency with average exit-survey scores (AAS-F-043). */
+    @GetMapping("/exit-reasons")
+    public ExitInsights exitReasons(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                                    @RequestParam(required = false) Long departmentId) {
+        LocalDate end = to != null ? to : LocalDate.now();
+        LocalDate start = from != null ? from : end.withDayOfYear(1);
+        return service.exitInsights(CurrentUser.get(), start, end, departmentId);
     }
 
     /** Monthly attrition trend compared with the previous year (AAS-F-042). */

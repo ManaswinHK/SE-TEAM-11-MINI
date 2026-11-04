@@ -112,6 +112,36 @@ function barData(labels, values) {
   }
 }
 
+const SURVEY_AREAS = [
+  ['manager', 'Manager'],
+  ['pay', 'Pay and benefits'],
+  ['growth', 'Career growth'],
+  ['workLife', 'Work-life balance'],
+  ['culture', 'Culture'],
+]
+
+// Average 1-5 ratings; hidden below the anonymity threshold (AAS-SR-006).
+function SurveyScores({ survey }) {
+  if (survey.insufficientData) {
+    return (
+      <p className="muted">
+        {survey.responses === 0 ? 'No survey responses in this period.' : 'Insufficient data: scores appear from 5 responses.'}
+      </p>
+    )
+  }
+  return (
+    <>
+      <div className="chart" style={{ height: 200 }}>
+        <Bar
+          data={barData(SURVEY_AREAS.map(([, label]) => label), SURVEY_AREAS.map(([key]) => survey[key]))}
+          options={barOptions({ horizontal: true, tooltip: (ctx) => `${ctx.parsed.x.toFixed(2)} out of 5` })}
+        />
+      </div>
+      <p className="muted small">Average of {survey.responses} responses, from 1 (poor) to 5 (excellent)</p>
+    </>
+  )
+}
+
 export default function Dashboard() {
   const { user } = useAuth()
   const isManager = user.role === 'DEPT_MANAGER'
@@ -121,6 +151,7 @@ export default function Dashboard() {
   const [departments, setDepartments] = useState([])
   const [report, setReport] = useState(null)
   const [trend, setTrend] = useState(null)
+  const [insights, setInsights] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -136,6 +167,7 @@ export default function Dashboard() {
         setError('')
       })
       .catch((err) => setError(err.message))
+    api(`/api/analytics/exit-reasons?${params}`).then(setInsights).catch(() => setInsights(null))
   }, [range, departmentId])
 
   // The trend always covers the last 12 months, whatever period the KPIs show.
@@ -201,6 +233,32 @@ export default function Dashboard() {
               <h2>Monthly attrition, last 12 months vs previous year</h2>
               <div className="chart" style={{ height: 260 }}>
                 <TrendChart points={trend} />
+              </div>
+            </div>
+          )}
+
+          {insights && (
+            <div className="grid-2">
+              <div className="card">
+                <h2>Top exit reasons</h2>
+                {insights.reasons.length === 0 ? <p className="muted">No exits in this period.</p> : (
+                  <table className="table">
+                    <thead><tr><th>Reason</th><th className="right">Left</th><th className="right">Share</th></tr></thead>
+                    <tbody>
+                      {insights.reasons.map((r) => (
+                        <tr key={r.reason}>
+                          <td>{r.reason}</td>
+                          <td className="right">{r.separations}</td>
+                          <td className="right">{Math.round(r.share)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+              <div className="card">
+                <h2>Exit survey scores</h2>
+                <SurveyScores survey={insights.survey} />
               </div>
             </div>
           )}
