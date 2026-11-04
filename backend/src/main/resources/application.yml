@@ -64,6 +64,7 @@ aas:
   survey:
     # Tests run the job themselves.
     send-cron: "-"
+    reminder-cron: "-"
 
 ---
 spring:

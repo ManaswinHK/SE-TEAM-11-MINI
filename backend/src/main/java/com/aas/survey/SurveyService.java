@@ -103,6 +103,23 @@ public class SurveyService {
         }
     }
 
+    @Scheduled(cron = "${aas.survey.reminder-cron:0 30 * * * *}")
+    @Transactional
+    public void sendReminders() {
+        sendReminders(LocalDateTime.now());
+    }
+
+    /** Reminds people who have not answered yet (AAS-F-032). */
+    @Transactional
+    public void sendReminders(LocalDateTime now) {
+        for (SurveyInvite invite : invites.findBySentAtIsNotNullAndSubmittedAtIsNullAndCancelledAtIsNullAndExpiresAtAfter(now)) {
+            if (invite.reminderDue(now)
+                    && deliver(invite, "Reminder: your exit survey", "This is a reminder to complete your exit survey.")) {
+                invite.markReminded(now);
+            }
+        }
+    }
+
     public SurveyForm form(String token) {
         SurveyInvite invite = openInvite(token);
         String org = orgs.findById(invite.getOrgId()).map(o -> o.getName()).orElse(null);

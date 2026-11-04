@@ -18,6 +18,8 @@ public interface SurveyInviteRepository extends JpaRepository<SurveyInvite, Long
 
     List<SurveyInvite> findBySentAtIsNullAndCancelledAtIsNullAndExpiresAtAfter(LocalDateTime now);
 
+    List<SurveyInvite> findBySentAtIsNotNullAndSubmittedAtIsNullAndCancelledAtIsNullAndExpiresAtAfter(LocalDateTime now);
+
     /** Returns 0 if the survey was already submitted, so two simultaneous submissions cannot both succeed. */
     @Modifying
     @Query("update SurveyInvite i set i.submittedAt = :now where i.id = :id and i.submittedAt is null")
