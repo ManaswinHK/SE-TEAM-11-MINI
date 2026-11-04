@@ -57,6 +57,7 @@ public class SurveyInvite {
     }
 
     public void markSent(LocalDateTime when) { this.sentAt = when; }
+    public void markSubmitted(LocalDateTime when) { this.submittedAt = when; }
     public void cancel(LocalDateTime when) { this.cancelledAt = when; }
 
     public Long getId() { return id; }

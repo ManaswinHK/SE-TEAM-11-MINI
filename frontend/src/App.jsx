@@ -6,6 +6,7 @@ import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Separations from './pages/Separations.jsx'
 import Settings from './pages/Settings.jsx'
+import Survey from './pages/Survey.jsx'
 import { AuthProvider } from './auth/AuthContext.jsx'
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
       <Routes>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
+        <Route path="survey/:token" element={<Survey />} />
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="employees" element={<RequirePage page="employees"><Employees /></RequirePage>} />

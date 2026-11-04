@@ -18,7 +18,13 @@ import com.aas.separation.ClearanceItem;
 import com.aas.separation.ClearanceService;
 import com.aas.separation.Separation;
 import com.aas.separation.SeparationRepository;
+import com.aas.survey.SurveyInvite;
+import com.aas.survey.SurveyInviteRepository;
+import com.aas.survey.SurveyResponse;
+import com.aas.survey.SurveyResponseRepository;
+import com.aas.survey.SurveyService;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,12 +55,17 @@ public class DevDataSeeder implements CommandLineRunner {
     private final SeparationRepository separations;
     private final PasswordEncoder encoder;
     private final ClearanceService clearance;
+    private final SurveyInviteRepository surveyInvites;
+    private final SurveyResponseRepository surveyResponses;
 
     public DevDataSeeder(OrganizationRepository orgs, OrgService orgService, DepartmentRepository departments,
                          AppUserRepository users, EmployeeRepository employees, HeadcountService headcount,
                          ExitReasonRepository reasons, SeparationRepository separations, PasswordEncoder encoder,
-                         ClearanceService clearance) {
+                         ClearanceService clearance, SurveyInviteRepository surveyInvites,
+                         SurveyResponseRepository surveyResponses) {
         this.clearance = clearance;
+        this.surveyInvites = surveyInvites;
+        this.surveyResponses = surveyResponses;
         this.orgs = orgs;
         this.orgService = orgService;
         this.departments = departments;
@@ -99,6 +110,7 @@ public class DevDataSeeder implements CommandLineRunner {
      */
     private void seedSeparations(Organization org, Map<String, Department> depts) {
         Random rnd = new Random(7);
+        Random answers = new Random(11);
         Map<String, ExitReason> byName = new LinkedHashMap<>();
         reasons.findByOrgIdOrderByName(org.getId()).forEach(r -> byName.put(r.getName(), r));
         String[] weighted = {"Compensation", "Compensation", "Compensation", "Compensation", "Compensation", "Compensation",
@@ -145,8 +157,29 @@ public class DevDataSeeder implements CommandLineRunner {
             } else if (!serving) {
                 checklist.stream().limit(2 + sep.getId() % 2).forEach(i -> i.mark(true, null));
             }
+            seedSurvey(org, sep, reason, resigned, answers);
             if (serving) notice++; else completed++;
         }
+    }
+
+    /** Six in ten people who already left answered the exit survey, scoring the cause of their exit lowest. */
+    private void seedSurvey(Organization org, Separation sep, ExitReason reason, LocalDate resigned, Random answers) {
+        LocalDateTime invited = resigned.atTime(10, 0);
+        SurveyInvite invite = new SurveyInvite(org.getId(), sep.getId(), SurveyService.newToken(), invited);
+        invite.markSent(invited);
+        if (sep.getStatus() != Separation.Status.NOTICE_PERIOD && answers.nextInt(10) < 6) {
+            String name = reason.getName();
+            invite.markSubmitted(invited.plusDays(2));
+            surveyResponses.save(new SurveyResponse(org.getId(), sep.getId(),
+                    rating(answers, name.startsWith("Manager")), rating(answers, name.equals("Compensation")),
+                    rating(answers, name.equals("Career growth")), rating(answers, name.equals("Work-life balance")),
+                    rating(answers, false), null, invited.plusDays(2)));
+        }
+        surveyInvites.save(invite);
+    }
+
+    private static int rating(Random answers, boolean causeOfExit) {
+        return causeOfExit ? 1 + answers.nextInt(2) : 3 + answers.nextInt(3);
     }
 
     /** Monthly snapshots since January 2025 so headcount history is available immediately. */

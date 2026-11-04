@@ -111,6 +111,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 .checklist { list-style: none; margin: 0 0 1rem; padding: 0; }
 .checklist li { padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
 .checklist li:last-child { border-bottom: none; }
+.survey-card { max-width: 520px; width: 100%; }
+.rating { display: flex; flex-wrap: wrap; gap: 1rem; border: none; border-bottom: 1px solid var(--border); margin: 0 0 0.75rem; padding: 0 0 0.75rem; }
+.rating legend { font-weight: 600; padding: 0 0 0.35rem; }
+.rating label { display: inline-flex; align-items: center; gap: 0.3rem; margin: 0; }
 .row-actions { white-space: nowrap; }
 .row-actions .btn + .btn { margin-left: 0.5rem; }
 .selected-employee { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
