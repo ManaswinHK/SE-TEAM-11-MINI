@@ -15,6 +15,7 @@ import com.aas.org.ExitReason;
 import com.aas.org.ExitReasonRepository;
 import com.aas.separation.SeparationDtos.SeparationRequest;
 import com.aas.separation.SeparationDtos.SeparationView;
+import com.aas.survey.SurveyService;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
@@ -40,10 +41,12 @@ public class SeparationService {
     private final AuditLogRepository audit;
     private final AccessScope scope;
     private final ClearanceService clearance;
+    private final SurveyService surveys;
 
     public SeparationService(SeparationRepository separations, EmployeeRepository employees, ExitReasonRepository reasons,
                              DepartmentRepository departments, AuditLogRepository audit, AccessScope scope,
-                             ClearanceService clearance) {
+                             ClearanceService clearance, SurveyService surveys) {
+        this.surveys = surveys;
         this.separations = separations;
         this.employees = employees;
         this.reasons = reasons;
@@ -82,6 +85,7 @@ public class SeparationService {
         emp.setLastWorkingDay(req.lastWorkingDay());
         emp.setStatus(s.getStatus() == Separation.Status.COMPLETED ? EmployeeStatus.SEPARATED : EmployeeStatus.NOTICE_PERIOD);
         clearance.createDefaults(s);
+        surveys.createInvite(s, emp);
 
         audit.save(new AuditLog(user.orgId(), user.userId(), user.email(), "CREATE", "SEPARATION", s.getId(),
                 "Employee " + emp.getEmployeeCode() + ", " + req.type() + ", last working day " + req.lastWorkingDay()));
@@ -129,6 +133,7 @@ public class SeparationService {
         s.withdraw(blankToNull(note));
         e.setStatus(EmployeeStatus.ACTIVE);
         e.setLastWorkingDay(null);
+        surveys.cancel(s.getId());
         audit.save(new AuditLog(user.orgId(), user.userId(), user.email(), "WITHDRAW", "SEPARATION", s.getId(),
                 "Employee " + e.getEmployeeCode() + " retained"));
         return view(s, e, departments.findById(e.getDepartmentId()).map(Department::getName).orElse(null),

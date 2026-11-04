@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
-import { SEPARATION_STATUS, SEPARATION_STATUS_CLASS, SEPARATION_TYPE } from '../labels.js'
+import { SEPARATION_STATUS, SEPARATION_STATUS_CLASS, SEPARATION_TYPE, SURVEY_STATUS } from '../labels.js'
 import ClearanceDialog from './ClearanceDialog.jsx'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -162,6 +162,7 @@ export default function Separations() {
   const [departments, setDepartments] = useState([])
   const [reasons, setReasons] = useState([])
   const [rows, setRows] = useState(null)
+  const [surveys, setSurveys] = useState({})
   const [recording, setRecording] = useState(false)
   const [clearanceFor, setClearanceFor] = useState(null)
   const [withdrawing, setWithdrawing] = useState(null)
@@ -176,7 +177,10 @@ export default function Separations() {
     const params = new URLSearchParams()
     Object.entries(filters).forEach(([k, v]) => v && params.set(k, v))
     api(`/api/separations?${params}`).then(setRows)
-  }, [filters])
+    if (canRecord) {
+      api('/api/surveys/invites').then((list) => setSurveys(Object.fromEntries(list.map((i) => [i.separationId, i.status]))))
+    }
+  }, [filters, canRecord])
 
   useEffect(() => {
     load()
@@ -208,7 +212,7 @@ export default function Separations() {
           <table className="table">
             <thead>
               <tr>
-                <th>Employee</th><th>Department</th><th>Resigned</th><th>Last day</th><th>Tenure</th><th>Type</th><th>Reason</th><th>Regretted</th><th>Status</th><th />
+                <th>Employee</th><th>Department</th><th>Resigned</th><th>Last day</th><th>Tenure</th><th>Type</th><th>Reason</th><th>Regretted</th><th>Status</th>{canRecord && <th>Survey</th>}<th />
               </tr>
             </thead>
             <tbody>
@@ -223,6 +227,7 @@ export default function Separations() {
                   <td>{s.reasonName}</td>
                   <td>{s.regretted ? 'Yes' : 'No'}</td>
                   <td><span className={SEPARATION_STATUS_CLASS[s.status]}>{SEPARATION_STATUS[s.status]}</span></td>
+                  {canRecord && <td>{SURVEY_STATUS[surveys[s.id]] ?? <span className="muted">None</span>}</td>}
                   <td className="row-actions">
                     {s.status !== 'WITHDRAWN' && <button className="btn link" onClick={() => setClearanceFor(s)}>Clearance</button>}
                     {canRecord && s.status === 'NOTICE_PERIOD' && (
@@ -231,7 +236,7 @@ export default function Separations() {
                   </td>
                 </tr>
               ))}
-              {rows && rows.length === 0 && <tr><td colSpan={10} className="muted">No separations in this period.</td></tr>}
+              {rows && rows.length === 0 && <tr><td colSpan={11} className="muted">No separations in this period.</td></tr>}
             </tbody>
           </table>
         </div>
