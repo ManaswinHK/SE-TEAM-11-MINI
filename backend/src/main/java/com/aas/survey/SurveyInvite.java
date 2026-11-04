@@ -12,6 +12,8 @@ import java.time.LocalDateTime;
 public class SurveyInvite {
 
     public static final int VALID_DAYS = 30;
+    public static final int MAX_REMINDERS = 2;
+    public static final int REMINDER_INTERVAL_DAYS = 3;
 
     public enum Status { PENDING, SENT, SUBMITTED, EXPIRED, CANCELLED }
 
@@ -35,6 +37,8 @@ public class SurveyInvite {
     private LocalDateTime expiresAt;
 
     private LocalDateTime sentAt;
+    private LocalDateTime lastReminderAt;
+    private int remindersSent;
     private LocalDateTime submittedAt;
     private LocalDateTime cancelledAt;
 
@@ -56,6 +60,17 @@ public class SurveyInvite {
         return sentAt == null ? Status.PENDING : Status.SENT;
     }
 
+    /** AAS-F-032: a reminder goes out 3 days after the invite or the previous reminder, at most twice. */
+    public boolean reminderDue(LocalDateTime now) {
+        LocalDateTime last = lastReminderAt != null ? lastReminderAt : sentAt;
+        return remindersSent < MAX_REMINDERS && !last.plusDays(REMINDER_INTERVAL_DAYS).isAfter(now);
+    }
+
+    public void markReminded(LocalDateTime when) {
+        this.lastReminderAt = when;
+        this.remindersSent++;
+    }
+
     public void markSent(LocalDateTime when) { this.sentAt = when; }
     public void markSubmitted(LocalDateTime when) { this.submittedAt = when; }
     public void cancel(LocalDateTime when) { this.cancelledAt = when; }
@@ -67,6 +82,7 @@ public class SurveyInvite {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getExpiresAt() { return expiresAt; }
     public LocalDateTime getSentAt() { return sentAt; }
+    public int getRemindersSent() { return remindersSent; }
     public LocalDateTime getSubmittedAt() { return submittedAt; }
     public LocalDateTime getCancelledAt() { return cancelledAt; }
 }
