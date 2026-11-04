@@ -2,14 +2,20 @@ package com.aas.analytics;
 
 import com.aas.auth.AccessScope;
 import com.aas.auth.CurrentUser;
+import com.aas.auth.Role;
 import com.aas.common.ApiException;
 import com.aas.employee.Employee;
 import com.aas.employee.EmployeeRepository;
 import com.aas.org.Department;
 import com.aas.org.DepartmentRepository;
+import com.aas.org.ExitReason;
+import com.aas.org.ExitReasonRepository;
 import com.aas.separation.Separation;
 import com.aas.separation.SeparationRepository;
+import com.aas.survey.SurveyResponse;
+import com.aas.survey.SurveyResponseRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.YearMonth;
@@ -19,8 +25,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
@@ -53,15 +61,34 @@ public class AnalyticsService {
                              long previousYearSeparations, BigDecimal previousYearRate) {
     }
 
+    public record ReasonRow(String reason, ExitReason.Category category, long separations, BigDecimal share) {
+    }
+
+    /** Average 1-5 ratings. The averages are null when {@code insufficientData} is set (AAS-SR-006). */
+    public record SurveyScores(long responses, boolean insufficientData, BigDecimal manager, BigDecimal pay,
+                               BigDecimal growth, BigDecimal workLife, BigDecimal culture) {
+    }
+
+    public record ExitInsights(List<ReasonRow> reasons, SurveyScores survey) {
+    }
+
+    /** Below this many responses Department Managers see no scores, so individuals cannot be identified. */
+    static final int MIN_SURVEY_RESPONSES = 5;
+
     static final List<String> BANDS = List.of("< 1 year", "1-3 years", "3-5 years", "> 5 years");
 
     private final EmployeeRepository employees;
     private final SeparationRepository separations;
     private final DepartmentRepository departments;
     private final AccessScope scope;
+    private final ExitReasonRepository reasons;
+    private final SurveyResponseRepository surveyResponses;
 
     public AnalyticsService(EmployeeRepository employees, SeparationRepository separations,
-                            DepartmentRepository departments, AccessScope scope) {
+                            DepartmentRepository departments, AccessScope scope, ExitReasonRepository reasons,
+                            SurveyResponseRepository surveyResponses) {
+        this.reasons = reasons;
+        this.surveyResponses = surveyResponses;
         this.employees = employees;
         this.separations = separations;
         this.departments = departments;
@@ -146,6 +173,57 @@ public class AnalyticsService {
                 .filter(s -> !s.getLastWorkingDay().isBefore(from) && !s.getLastWorkingDay().isAfter(to))
                 .toList();
         return kpis(from, to, people, inMonth);
+    }
+
+    /** Why people left in the period, and what they said in the exit survey (AAS-F-043). */
+    public ExitInsights exitInsights(CurrentUser user, LocalDate from, LocalDate to, Long departmentId) {
+        if (to.isBefore(from)) {
+            throw ApiException.badRequest("'to' must not be before 'from'");
+        }
+        Long dept = scope.departmentFilter(user, departmentId);
+        LocalDate today = LocalDate.now();
+        LocalDate effectiveTo = to.isAfter(today) ? today : to;
+        Set<Long> inScope = employees.findByOrgId(user.orgId()).stream()
+                .filter(e -> dept == null || dept.equals(e.getDepartmentId()))
+                .map(Employee::getId)
+                .collect(Collectors.toSet());
+        List<Separation> exits = effectiveTo.isBefore(from) ? List.of()
+                : separations.findByOrgIdAndLastWorkingDayBetweenOrderByLastWorkingDayDesc(user.orgId(), from, effectiveTo)
+                        .stream().filter(Separation::countsAsAttrition)
+                        .filter(s -> inScope.contains(s.getEmployeeId())).toList();
+
+        Map<Long, ExitReason> reasonById = reasons.findByOrgIdOrderByName(user.orgId()).stream()
+                .collect(Collectors.toMap(ExitReason::getId, Function.identity()));
+        BigDecimal total = BigDecimal.valueOf(exits.size());
+        List<ReasonRow> ranked = exits.stream()
+                .collect(Collectors.groupingBy(Separation::getReasonId, Collectors.counting()))
+                .entrySet().stream()
+                .map(en -> {
+                    ExitReason r = reasonById.get(en.getKey());
+                    return new ReasonRow(r.getName(), r.getCategory(), en.getValue(), AttritionCalculator.rate(en.getValue(), total));
+                })
+                .sorted(Comparator.comparing(ReasonRow::separations).reversed().thenComparing(ReasonRow::reason))
+                .toList();
+
+        Set<Long> exitIds = exits.stream().map(Separation::getId).collect(Collectors.toSet());
+        List<SurveyResponse> answers = surveyResponses.findByOrgId(user.orgId()).stream()
+                .filter(r -> exitIds.contains(r.getSeparationId()))
+                .toList();
+        return new ExitInsights(ranked, scores(answers, user.role() == Role.DEPT_MANAGER));
+    }
+
+    private static SurveyScores scores(List<SurveyResponse> answers, boolean applyThreshold) {
+        if (answers.isEmpty() || (applyThreshold && answers.size() < MIN_SURVEY_RESPONSES)) {
+            return new SurveyScores(answers.size(), true, null, null, null, null, null);
+        }
+        return new SurveyScores(answers.size(), false, average(answers, SurveyResponse::getManager),
+                average(answers, SurveyResponse::getPay), average(answers, SurveyResponse::getGrowth),
+                average(answers, SurveyResponse::getWorkLife), average(answers, SurveyResponse::getCulture));
+    }
+
+    private static BigDecimal average(List<SurveyResponse> answers, ToIntFunction<SurveyResponse> rating) {
+        long sum = answers.stream().mapToInt(rating).sum();
+        return BigDecimal.valueOf(sum).divide(BigDecimal.valueOf(answers.size()), 2, RoundingMode.HALF_UP);
     }
 
     private static Kpis kpis(LocalDate from, LocalDate to, List<Employee> people, List<Separation> exits) {
