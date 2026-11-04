@@ -49,4 +49,4 @@ These requirements have test cases but no backlog item: AAS-NF-003 (backup and r
 - Sprint 1 code was finished on 28 Oct and released to `main` in stages through 3 Nov, and Jira cards moved with those merges.
 - AAS-21 (Sprint 1 video) was moved to Done before the video was recorded.
 - PRs #1-#18 were raised from the repository owner's account, with teammates listed as co-authors on commits, and were merged without a formal review.
-- The backlog was managed in Jira rather than a GitHub Project.
+- The backlog was managed in Jira, and was copied to the GitHub Project "AAS Backlog" on 4 Nov when the evaluation checklist arrived. Issue numbers there differ from the Jira keys, which are in each title.
