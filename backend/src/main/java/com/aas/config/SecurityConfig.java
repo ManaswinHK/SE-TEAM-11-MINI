@@ -25,7 +25,7 @@ public class SecurityConfig {
                 .headers(h -> h.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/health", "/actuator/health", "/api/auth/login", "/api/auth/verify-otp",
-                                "/api/organizations/register").permitAll()
+                                "/api/organizations/register", "/api/public/survey/*").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((req, res, ex) -> {

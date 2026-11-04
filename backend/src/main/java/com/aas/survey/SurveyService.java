@@ -1,12 +1,18 @@
 package com.aas.survey;
 
 import com.aas.auth.CurrentUser;
+import com.aas.common.ApiException;
 import com.aas.employee.Employee;
 import com.aas.employee.EmployeeRepository;
 import com.aas.org.OrganizationRepository;
 import com.aas.separation.Separation;
 import com.aas.separation.SeparationRepository;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
@@ -14,6 +20,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,20 +35,34 @@ public class SurveyService {
     public record InviteStatus(Long separationId, SurveyInvite.Status status) {
     }
 
+    /** What the public page may know: nothing about the person the link was sent to. */
+    public record SurveyForm(String organizationName, LocalDate expiresOn) {
+    }
+
+    public record SurveyAnswers(@NotNull @Min(1) @Max(5) Integer manager,
+                                @NotNull @Min(1) @Max(5) Integer pay,
+                                @NotNull @Min(1) @Max(5) Integer growth,
+                                @NotNull @Min(1) @Max(5) Integer workLife,
+                                @NotNull @Min(1) @Max(5) Integer culture,
+                                @Size(max = 2000) String comments) {
+    }
+
     private static final Logger log = LoggerFactory.getLogger(SurveyService.class);
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final SurveyInviteRepository invites;
+    private final SurveyResponseRepository responses;
     private final SeparationRepository separations;
     private final EmployeeRepository employees;
     private final OrganizationRepository orgs;
     private final MailGateway mail;
     private final String baseUrl;
 
-    public SurveyService(SurveyInviteRepository invites, SeparationRepository separations, EmployeeRepository employees,
-                         OrganizationRepository orgs, MailGateway mail,
+    public SurveyService(SurveyInviteRepository invites, SurveyResponseRepository responses, SeparationRepository separations,
+                         EmployeeRepository employees, OrganizationRepository orgs, MailGateway mail,
                          @Value("${aas.survey.base-url:http://localhost:5173}") String baseUrl) {
         this.invites = invites;
+        this.responses = responses;
         this.separations = separations;
         this.employees = employees;
         this.orgs = orgs;
@@ -80,6 +101,40 @@ public class SurveyService {
                 invite.markSent(now);
             }
         }
+    }
+
+    public SurveyForm form(String token) {
+        SurveyInvite invite = openInvite(token);
+        String org = orgs.findById(invite.getOrgId()).map(o -> o.getName()).orElse(null);
+        return new SurveyForm(org, invite.getExpiresAt().toLocalDate());
+    }
+
+    @Transactional
+    public void submit(String token, SurveyAnswers a) {
+        SurveyInvite invite = openInvite(token);
+        LocalDateTime now = LocalDateTime.now();
+        if (invites.markSubmitted(invite.getId(), now) == 0) {
+            throw alreadySubmitted();
+        }
+        String comments = a.comments() == null || a.comments().isBlank() ? null : a.comments().trim();
+        responses.save(new SurveyResponse(invite.getOrgId(), invite.getSeparationId(), a.manager(), a.pay(), a.growth(),
+                a.workLife(), a.culture(), comments, now));
+    }
+
+    private SurveyInvite openInvite(String token) {
+        SurveyInvite invite = invites.findByToken(token).orElseThrow(() -> ApiException.notFound("Survey"));
+        switch (invite.status(LocalDateTime.now())) {
+            case SUBMITTED -> throw alreadySubmitted();
+            case EXPIRED -> throw new ApiException(HttpStatus.GONE, "SURVEY_EXPIRED", "This survey link has expired");
+            case CANCELLED -> throw new ApiException(HttpStatus.GONE, "SURVEY_CANCELLED", "This survey is no longer open");
+            default -> {
+                return invite;
+            }
+        }
+    }
+
+    private static ApiException alreadySubmitted() {
+        return ApiException.conflict("This survey has already been submitted");
     }
 
     public List<InviteStatus> statuses(CurrentUser user) {
