@@ -46,6 +46,10 @@ aas:
   security:
     # Dev only: the login response includes the current one-time code so demos work without a phone.
     dev-otp-echo: true
+logging:
+  level:
+    # Without an SMTP server, survey emails appear here so the link can be opened.
+    com.aas.survey.MailConfig: DEBUG
 
 ---
 spring:
@@ -56,6 +60,10 @@ spring:
     url: jdbc:h2:mem:aas-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
     username: sa
     password: ""
+aas:
+  survey:
+    # Tests run the job themselves.
+    send-cron: "-"
 
 ---
 spring:
