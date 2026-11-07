@@ -1,6 +1,8 @@
 package com.aas.auth;
 
 import com.aas.common.ApiException;
+import com.aas.common.AuditLog;
+import com.aas.common.AuditLogRepository;
 import com.aas.org.DepartmentRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -48,8 +50,11 @@ public class UserController {
     private final AppUserRepository users;
     private final DepartmentRepository departments;
     private final PasswordEncoder encoder;
+    private final AuditLogRepository audit;
 
-    public UserController(AppUserRepository users, DepartmentRepository departments, PasswordEncoder encoder) {
+    public UserController(AppUserRepository users, DepartmentRepository departments, PasswordEncoder encoder,
+                          AuditLogRepository audit) {
+        this.audit = audit;
         this.users = users;
         this.departments = departments;
         this.encoder = encoder;
@@ -70,7 +75,9 @@ public class UserController {
         }
         AppUser user = new AppUser(orgId, req.email().trim(), req.fullName().trim(), encoder.encode(req.password()), req.role());
         user.setDepartmentId(validDepartment(orgId, req.role(), req.departmentId()));
-        return UserRow.of(users.save(user));
+        users.save(user);
+        audit("CREATE", user);
+        return UserRow.of(user);
     }
 
     @PutMapping("/{id}")
@@ -87,7 +94,15 @@ public class UserController {
         if (req.active() != null) {
             user.setActive(req.active());
         }
+        audit("UPDATE", user);
         return UserRow.of(user);
+    }
+
+    /** AAS-SR-005: account and role changes are audited. */
+    private void audit(String action, AppUser user) {
+        CurrentUser me = CurrentUser.get();
+        audit.save(new AuditLog(me.orgId(), me.userId(), me.email(), action, "USER", user.getId(),
+                user.getEmail() + " as " + user.getRole() + (user.isActive() ? "" : " (inactive)")));
     }
 
     private Long validDepartment(Long orgId, Role role, Long departmentId) {

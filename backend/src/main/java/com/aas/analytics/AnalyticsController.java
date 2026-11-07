@@ -7,6 +7,9 @@ import com.aas.auth.CurrentUser;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,6 +43,22 @@ public class AnalyticsController {
         LocalDate end = to != null ? to : LocalDate.now();
         LocalDate start = from != null ? from : end.withDayOfYear(1);
         return service.exitInsights(CurrentUser.get(), start, end, departmentId);
+    }
+
+    /** The dashboard's figures for the same filters as CSV (AAS-F-061). */
+    @GetMapping(value = "/export.csv", produces = "text/csv")
+    public ResponseEntity<String> exportCsv(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                                            @RequestParam(required = false) Long departmentId) {
+        LocalDate end = to != null ? to : LocalDate.now();
+        LocalDate start = from != null ? from : end.withDayOfYear(1);
+        CurrentUser user = CurrentUser.get();
+        String csv = DashboardCsv.write(service.attrition(user, start, end, departmentId),
+                service.exitInsights(user, start, end, departmentId));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"attrition-" + start + "-to-" + end + ".csv\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csv);
     }
 
     /** Monthly attrition trend compared with the previous year (AAS-F-042). */

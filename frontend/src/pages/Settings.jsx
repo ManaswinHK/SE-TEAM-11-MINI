@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import HeadcountPanel from './HeadcountPanel.jsx'
+import ReportSubscription from './ReportSubscription.jsx'
 import UsersPanel from './UsersPanel.jsx'
 
 const CATEGORY_LABEL = { VOLUNTARY: 'Voluntary', INVOLUNTARY: 'Involuntary', OTHER: 'Other' }
@@ -117,7 +118,8 @@ export default function Settings() {
   return (
     <section>
       <h1>Settings</h1>
-      {!canEdit && <p className="muted">Only HR Admins can change these settings.</p>}
+      <ReportSubscription />
+      {!canEdit && <p className="muted">Only HR Admins can change the organization settings below.</p>}
       <OrganizationForm canEdit={canEdit} />
       <div className="grid-2">
         <ListEditor

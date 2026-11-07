@@ -1,5 +1,6 @@
 package com.aas.config;
 
+import com.aas.alert.AlertService;
 import com.aas.auth.AppUser;
 import com.aas.auth.AppUserRepository;
 import com.aas.auth.Role;
@@ -14,6 +15,7 @@ import com.aas.org.ExitReasonRepository;
 import com.aas.org.OrgService;
 import com.aas.org.Organization;
 import com.aas.org.OrganizationRepository;
+import com.aas.risk.RiskService;
 import com.aas.separation.ClearanceItem;
 import com.aas.separation.ClearanceService;
 import com.aas.separation.Separation;
@@ -55,6 +57,8 @@ public class DevDataSeeder implements CommandLineRunner {
     private final SeparationRepository separations;
     private final PasswordEncoder encoder;
     private final ClearanceService clearance;
+    private final RiskService risk;
+    private final AlertService alerts;
     private final SurveyInviteRepository surveyInvites;
     private final SurveyResponseRepository surveyResponses;
 
@@ -62,8 +66,10 @@ public class DevDataSeeder implements CommandLineRunner {
                          AppUserRepository users, EmployeeRepository employees, HeadcountService headcount,
                          ExitReasonRepository reasons, SeparationRepository separations, PasswordEncoder encoder,
                          ClearanceService clearance, SurveyInviteRepository surveyInvites,
-                         SurveyResponseRepository surveyResponses) {
+                         SurveyResponseRepository surveyResponses, RiskService risk, AlertService alerts) {
         this.clearance = clearance;
+        this.risk = risk;
+        this.alerts = alerts;
         this.surveyInvites = surveyInvites;
         this.surveyResponses = surveyResponses;
         this.orgs = orgs;
@@ -101,6 +107,8 @@ public class DevDataSeeder implements CommandLineRunner {
         seedEmployees(org, depts);
         seedSeparations(org, depts);
         backfillSnapshots(org);
+        risk.scoreOrganization(org.getId(), LocalDate.now());
+        alerts.check(org.getId(), LocalDate.now());
         log.info("Seeded demo organization 'Acme Technologies' (password for all demo users: {})", DEMO_PASSWORD);
     }
 

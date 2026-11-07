@@ -4,3 +4,5 @@ export const SEPARATION_TYPE = { VOLUNTARY: 'Voluntary', INVOLUNTARY: 'Involunta
 export const SEPARATION_STATUS = { NOTICE_PERIOD: 'Notice period', COMPLETED: 'Left', CLOSED: 'Closed', WITHDRAWN: 'Retained' }
 export const SURVEY_STATUS = { PENDING: 'Sending', SENT: 'Sent', SUBMITTED: 'Answered', EXPIRED: 'Expired', CANCELLED: 'Cancelled' }
 export const SEPARATION_STATUS_CLASS = { NOTICE_PERIOD: 'badge warn', COMPLETED: 'badge danger', CLOSED: 'badge', WITHDRAWN: 'badge ok' }
+export const BAND_LABEL = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' }
+export const BAND_CLASS = { HIGH: 'badge danger', MEDIUM: 'badge warn', LOW: 'badge ok' }
