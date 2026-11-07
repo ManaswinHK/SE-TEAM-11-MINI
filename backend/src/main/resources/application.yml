@@ -69,6 +69,10 @@ aas:
     cron: "-"
   alert:
     cron: "-"
+  hrms:
+    cron: "-"
+  report:
+    cron: "-"
 
 ---
 spring:
