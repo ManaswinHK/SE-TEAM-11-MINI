@@ -1,6 +1,8 @@
 package com.aas.survey;
 
+import com.aas.common.EncryptedStringConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -36,6 +38,7 @@ public class SurveyResponse {
     @Column(nullable = false)
     private Integer culture;
 
+    @Convert(converter = EncryptedStringConverter.class)
     private String comments;
 
     @Column(nullable = false)
