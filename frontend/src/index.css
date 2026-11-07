@@ -115,6 +115,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 .rating { display: flex; flex-wrap: wrap; gap: 1rem; border: none; border-bottom: 1px solid var(--border); margin: 0 0 0.75rem; padding: 0 0 0.75rem; }
 .rating legend { font-weight: 600; padding: 0 0 0.35rem; }
 .rating label { display: inline-flex; align-items: center; gap: 0.3rem; margin: 0; }
+.factors { margin: 0; padding-left: 1rem; font-size: 0.85rem; }
+tr.overdue td { background: var(--danger-soft); }
 .row-actions { white-space: nowrap; }
 .row-actions .btn + .btn { margin-left: 0.5rem; }
 .selected-employee { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
