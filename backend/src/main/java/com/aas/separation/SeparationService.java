@@ -7,6 +7,7 @@ import com.aas.common.AuditLog;
 import com.aas.common.AuditLogRepository;
 import com.aas.common.FieldValidationException;
 import com.aas.employee.Employee;
+import com.aas.employee.EmployeeRef;
 import com.aas.employee.EmployeeRepository;
 import com.aas.employee.EmployeeStatus;
 import com.aas.org.Department;
@@ -95,18 +96,20 @@ public class SeparationService {
 
     public List<SeparationView> list(CurrentUser user, LocalDate from, LocalDate to, Long departmentId, Separation.Type type) {
         Long dept = scope.departmentFilter(user, departmentId);
-        Map<Long, Employee> emps = employees.findByOrgId(user.orgId()).stream()
-                .collect(Collectors.toMap(Employee::getId, Function.identity()));
+        List<Separation> inPeriod = separations.findByOrgIdAndLastWorkingDayBetweenOrderByLastWorkingDayDesc(user.orgId(), from, to);
+        // Load only the people being listed, not the whole organization (AAS-NF-001).
+        Map<Long, EmployeeRef> emps = employees.findRefs(user.orgId(), inPeriod.stream().map(Separation::getEmployeeId).distinct().toList())
+                .stream().collect(Collectors.toMap(EmployeeRef::id, Function.identity()));
         Map<Long, String> deptNames = departments.findByOrgIdOrderByName(user.orgId()).stream()
                 .collect(Collectors.toMap(Department::getId, Department::getName));
         Map<Long, String> reasonNames = reasons.findByOrgIdOrderByName(user.orgId()).stream()
                 .collect(Collectors.toMap(ExitReason::getId, ExitReason::getName));
-        return separations.findByOrgIdAndLastWorkingDayBetweenOrderByLastWorkingDayDesc(user.orgId(), from, to).stream()
+        return inPeriod.stream()
                 .filter(s -> type == null || s.getType() == type)
-                .filter(s -> dept == null || dept.equals(emps.get(s.getEmployeeId()).getDepartmentId()))
+                .filter(s -> dept == null || dept.equals(emps.get(s.getEmployeeId()).departmentId()))
                 .map(s -> {
-                    Employee e = emps.get(s.getEmployeeId());
-                    return view(s, e, deptNames.get(e.getDepartmentId()), reasonNames.get(s.getReasonId()));
+                    EmployeeRef e = emps.get(s.getEmployeeId());
+                    return view(s, e, deptNames.get(e.departmentId()), reasonNames.get(s.getReasonId()));
                 })
                 .toList();
     }
@@ -161,9 +164,14 @@ public class SeparationService {
     }
 
     static SeparationView view(Separation s, Employee e, String departmentName, String reasonName) {
-        int tenure = (int) Period.between(e.getJoinDate(), s.getLastWorkingDay()).toTotalMonths();
-        return new SeparationView(s.getId(), e.getId(), e.getEmployeeCode(), e.getFullName(), e.getDepartmentId(),
-                departmentName, e.getJoinDate(), s.getResignationDate(), s.getLastWorkingDay(), Math.max(tenure, 0),
+        return view(s, new EmployeeRef(e.getId(), e.getEmployeeCode(), e.getFullName(), e.getDepartmentId(), e.getJoinDate()),
+                departmentName, reasonName);
+    }
+
+    static SeparationView view(Separation s, EmployeeRef e, String departmentName, String reasonName) {
+        int tenure = (int) Period.between(e.joinDate(), s.getLastWorkingDay()).toTotalMonths();
+        return new SeparationView(s.getId(), e.id(), e.employeeCode(), e.fullName(), e.departmentId(),
+                departmentName, e.joinDate(), s.getResignationDate(), s.getLastWorkingDay(), Math.max(tenure, 0),
                 s.getType(), s.getReasonId(), reasonName, s.isRegretted(), s.getStatus(), s.getRemarks());
     }
 

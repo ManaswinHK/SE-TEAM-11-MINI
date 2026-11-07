@@ -85,3 +85,27 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/aas}
     username: ${DB_USER:aas}
     password: ${DB_PASSWORD:}
+---
+# Performance test (AAS-37): 50,000 generated employees in a separate database. Jobs are off so they do not skew timings.
+spring:
+  config:
+    activate:
+      on-profile: perf
+  datasource:
+    url: jdbc:h2:file:./data/aas-perf;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password: ""
+aas:
+  security:
+    dev-otp-echo: true
+  survey:
+    send-cron: "-"
+    reminder-cron: "-"
+  risk:
+    cron: "-"
+  alert:
+    cron: "-"
+  hrms:
+    cron: "-"
+  report:
+    cron: "-"

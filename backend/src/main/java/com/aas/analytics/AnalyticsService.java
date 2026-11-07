@@ -4,7 +4,7 @@ import com.aas.auth.AccessScope;
 import com.aas.auth.CurrentUser;
 import com.aas.auth.Role;
 import com.aas.common.ApiException;
-import com.aas.employee.Employee;
+import com.aas.employee.Person;
 import com.aas.employee.EmployeeRepository;
 import com.aas.org.Department;
 import com.aas.org.DepartmentRepository;
@@ -83,10 +83,12 @@ public class AnalyticsService {
     private final AccessScope scope;
     private final ExitReasonRepository reasons;
     private final SurveyResponseRepository surveyResponses;
+    private final AnalyticsCache cache;
 
     public AnalyticsService(EmployeeRepository employees, SeparationRepository separations,
                             DepartmentRepository departments, AccessScope scope, ExitReasonRepository reasons,
-                            SurveyResponseRepository surveyResponses) {
+                            SurveyResponseRepository surveyResponses, AnalyticsCache cache) {
+        this.cache = cache;
         this.reasons = reasons;
         this.surveyResponses = surveyResponses;
         this.employees = employees;
@@ -96,6 +98,11 @@ public class AnalyticsService {
     }
 
     public AttritionReport attrition(CurrentUser user, LocalDate from, LocalDate to, Long departmentId) {
+        Long dept = scope.departmentFilter(user, departmentId);
+        return cache.get(key("attrition", user, dept, from, to), () -> computeAttrition(user, from, to, departmentId));
+    }
+
+    private AttritionReport computeAttrition(CurrentUser user, LocalDate from, LocalDate to, Long departmentId) {
         if (to.isBefore(from)) {
             throw ApiException.badRequest("'to' must not be before 'from'");
         }
@@ -103,28 +110,28 @@ public class AnalyticsService {
         LocalDate today = LocalDate.now();
         LocalDate effectiveTo = to.isAfter(today) ? today : to;
 
-        List<Employee> people = employees.findByOrgId(user.orgId()).stream()
-                .filter(e -> dept == null || dept.equals(e.getDepartmentId()))
+        List<Person> people = employees.findPeople(user.orgId()).stream()
+                .filter(e -> dept == null || dept.equals(e.departmentId()))
                 .toList();
-        Map<Long, Employee> byId = people.stream().collect(Collectors.toMap(Employee::getId, Function.identity()));
+        Map<Long, Person> byId = people.stream().collect(Collectors.toMap(Person::id, Function.identity()));
         List<Separation> exits = effectiveTo.isBefore(from) ? List.of()
                 : separations.findByOrgIdAndLastWorkingDayBetweenOrderByLastWorkingDayDesc(user.orgId(), from, effectiveTo)
                         .stream().filter(Separation::countsAsAttrition)
                         .filter(s -> byId.containsKey(s.getEmployeeId())).toList();
 
-        Kpis kpis = kpis(from, effectiveTo, people, exits);
+        Kpis kpis = kpis(from, effectiveTo, people, exits, joinDates(people));
 
         Map<Long, String> deptNames = departments.findByOrgIdOrderByName(user.orgId()).stream()
                 .collect(Collectors.toMap(Department::getId, Department::getName));
-        List<GroupRow> byDepartment = groups(people, exits, byId, e -> deptNames.get(e.getDepartmentId()), from, effectiveTo);
+        List<GroupRow> byDepartment = groups(people, exits, byId, e -> deptNames.get(e.departmentId()), from, effectiveTo);
         List<GroupRow> byLocation = groups(people, exits, byId,
-                e -> e.getLocation() == null ? "Not set" : e.getLocation(), from, effectiveTo);
+                e -> e.location() == null ? "Not set" : e.location(), from, effectiveTo);
 
         Map<String, Long> bandCounts = new LinkedHashMap<>();
         BANDS.forEach(b -> bandCounts.put(b, 0L));
         for (Separation s : exits) {
-            Employee e = byId.get(s.getEmployeeId());
-            int months = (int) Period.between(e.getJoinDate(), s.getLastWorkingDay()).toTotalMonths();
+            Person e = byId.get(s.getEmployeeId());
+            int months = (int) Period.between(e.joinDate(), s.getLastWorkingDay()).toTotalMonths();
             bandCounts.merge(AttritionCalculator.tenureBand(Math.max(months, 0)), 1L, Long::sum);
         }
         List<BandRow> byTenure = bandCounts.entrySet().stream()
@@ -138,6 +145,11 @@ public class AnalyticsService {
 
     /** Monthly attrition rate for the last {@code months} calendar months (the current month runs to today). */
     public List<TrendPoint> trend(CurrentUser user, int months, Long departmentId) {
+        Long dept = scope.departmentFilter(user, departmentId);
+        return cache.get(key("trend", user, dept, months), () -> computeTrend(user, months, departmentId));
+    }
+
+    private List<TrendPoint> computeTrend(CurrentUser user, int months, Long departmentId) {
         if (months < 1 || months > 24) {
             throw ApiException.badRequest("months must be between 1 and 24");
         }
@@ -146,46 +158,59 @@ public class AnalyticsService {
         YearMonth last = YearMonth.from(today);
         YearMonth first = last.minusMonths(months - 1);
 
-        List<Employee> people = employees.findByOrgId(user.orgId()).stream()
-                .filter(e -> dept == null || dept.equals(e.getDepartmentId()))
+        List<Person> people = employees.findPeople(user.orgId()).stream()
+                .filter(e -> dept == null || dept.equals(e.departmentId()))
                 .toList();
-        Map<Long, Employee> byId = people.stream().collect(Collectors.toMap(Employee::getId, Function.identity()));
+        Map<Long, Person> byId = people.stream().collect(Collectors.toMap(Person::id, Function.identity()));
         List<Separation> exits = separations.findByOrgIdAndLastWorkingDayBetweenOrderByLastWorkingDayDesc(
                         user.orgId(), first.minusYears(1).atDay(1), today).stream()
                 .filter(Separation::countsAsAttrition)
                 .filter(s -> byId.containsKey(s.getEmployeeId()))
                 .toList();
 
+        Map<Long, LocalDate> joined = joinDates(people);
         List<TrendPoint> points = new ArrayList<>();
         for (YearMonth m = first; !m.isAfter(last); m = m.plusMonths(1)) {
-            Kpis now = monthKpis(m, today, people, exits);
-            Kpis before = monthKpis(m.minusYears(1), today, people, exits);
+            Kpis now = monthKpis(m, today, people, exits, joined);
+            Kpis before = monthKpis(m.minusYears(1), today, people, exits, joined);
             points.add(new TrendPoint(m.toString(), now.separations(), now.averageHeadcount(), now.attritionRate(),
                     before.separations(), before.attritionRate()));
         }
         return points;
     }
 
-    private static Kpis monthKpis(YearMonth month, LocalDate today, List<Employee> people, List<Separation> exits) {
+    private static Kpis monthKpis(YearMonth month, LocalDate today, List<Person> people, List<Separation> exits,
+                                  Map<Long, LocalDate> joined) {
         LocalDate from = month.atDay(1);
         LocalDate to = month.atEndOfMonth().isAfter(today) ? today : month.atEndOfMonth();
         List<Separation> inMonth = exits.stream()
                 .filter(s -> !s.getLastWorkingDay().isBefore(from) && !s.getLastWorkingDay().isAfter(to))
                 .toList();
-        return kpis(from, to, people, inMonth);
+        return kpis(from, to, people, inMonth, joined);
     }
 
     /** Why people left in the period, and what they said in the exit survey (AAS-F-043). */
     public ExitInsights exitInsights(CurrentUser user, LocalDate from, LocalDate to, Long departmentId) {
+        Long dept = scope.departmentFilter(user, departmentId);
+        return cache.get(key("reasons", user, dept, from, to), () -> computeExitInsights(user, from, to, departmentId));
+    }
+
+    /** Results depend on the organization, the department in scope, the day, and (for survey scores) the role. */
+    private static String key(String kind, CurrentUser user, Long dept, Object... args) {
+        return kind + "|" + user.orgId() + "|" + dept + "|" + (user.role() == Role.DEPT_MANAGER) + "|" + LocalDate.now()
+                + "|" + java.util.Arrays.toString(args);
+    }
+
+    private ExitInsights computeExitInsights(CurrentUser user, LocalDate from, LocalDate to, Long departmentId) {
         if (to.isBefore(from)) {
             throw ApiException.badRequest("'to' must not be before 'from'");
         }
         Long dept = scope.departmentFilter(user, departmentId);
         LocalDate today = LocalDate.now();
         LocalDate effectiveTo = to.isAfter(today) ? today : to;
-        Set<Long> inScope = employees.findByOrgId(user.orgId()).stream()
-                .filter(e -> dept == null || dept.equals(e.getDepartmentId()))
-                .map(Employee::getId)
+        Set<Long> inScope = employees.findPeople(user.orgId()).stream()
+                .filter(e -> dept == null || dept.equals(e.departmentId()))
+                .map(Person::id)
                 .collect(Collectors.toSet());
         List<Separation> exits = effectiveTo.isBefore(from) ? List.of()
                 : separations.findByOrgIdAndLastWorkingDayBetweenOrderByLastWorkingDayDesc(user.orgId(), from, effectiveTo)
@@ -226,13 +251,17 @@ public class AnalyticsService {
         return BigDecimal.valueOf(sum).divide(BigDecimal.valueOf(answers.size()), 2, RoundingMode.HALF_UP);
     }
 
-    private static Kpis kpis(LocalDate from, LocalDate to, List<Employee> people, List<Separation> exits) {
+    private static Map<Long, LocalDate> joinDates(List<Person> people) {
+        return people.stream().collect(Collectors.toMap(Person::id, Person::joinDate));
+    }
+
+    private static Kpis kpis(LocalDate from, LocalDate to, List<Person> people, List<Separation> exits,
+                             Map<Long, LocalDate> joined) {
         int opening = (int) people.stream().filter(e -> e.isEmployedOn(from)).count();
         int closing = (int) people.stream().filter(e -> e.isEmployedOn(to)).count();
         BigDecimal avg = AttritionCalculator.averageHeadcount(opening, closing);
         long voluntary = exits.stream().filter(s -> s.getType() == Separation.Type.VOLUNTARY).count();
         long regretted = exits.stream().filter(Separation::isRegretted).count();
-        Map<Long, LocalDate> joined = people.stream().collect(Collectors.toMap(Employee::getId, Employee::getJoinDate));
         long early = exits.stream()
                 .filter(s -> AttritionCalculator.isEarlyExit(joined.get(s.getEmployeeId()), s.getLastWorkingDay()))
                 .count();
@@ -242,13 +271,13 @@ public class AnalyticsService {
                 AttritionCalculator.rate(early, BigDecimal.valueOf(exits.size())));
     }
 
-    private static List<GroupRow> groups(List<Employee> people, List<Separation> exits, Map<Long, Employee> byId,
-                                         Function<Employee, String> key, LocalDate from, LocalDate to) {
-        Map<String, List<Employee>> grouped = people.stream()
+    private static List<GroupRow> groups(List<Person> people, List<Separation> exits, Map<Long, Person> byId,
+                                         Function<Person, String> key, LocalDate from, LocalDate to) {
+        Map<String, List<Person>> grouped = people.stream()
                 .filter(e -> key.apply(e) != null)
                 .collect(Collectors.groupingBy(key));
         List<GroupRow> rows = new ArrayList<>();
-        for (Map.Entry<String, List<Employee>> g : grouped.entrySet()) {
+        for (Map.Entry<String, List<Person>> g : grouped.entrySet()) {
             Predicate<Separation> inGroup = s -> Objects.equals(key.apply(byId.get(s.getEmployeeId())), g.getKey());
             long count = exits.stream().filter(inGroup).count();
             int opening = (int) g.getValue().stream().filter(e -> e.isEmployedOn(from)).count();

@@ -1,7 +1,9 @@
 package com.aas.separation;
 
+import com.aas.analytics.AnalyticsInvalidation;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
+@EntityListeners(AnalyticsInvalidation.class)
 public class Separation {
 
     public enum Type { VOLUNTARY, INVOLUNTARY, RETIREMENT, END_OF_CONTRACT }
