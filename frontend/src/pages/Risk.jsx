@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { BAND_CLASS, BAND_LABEL } from '../labels.js'
+import { LogActionDialog, RetentionList } from './RetentionActions.jsx'
 
 // Weekly flight-risk scores (AAS-F-050), highest first.
 export default function Risk() {
@@ -10,10 +11,17 @@ export default function Risk() {
   const [band, setBand] = useState('')
   const [rows, setRows] = useState(null)
   const [notice, setNotice] = useState('')
+  const [actions, setActions] = useState([])
+  const [logging, setLogging] = useState(null)
+
+  const loadActions = useCallback(() => {
+    api('/api/retention-actions').then(setActions)
+  }, [])
 
   const load = useCallback(() => {
     api(`/api/risk${band ? `?band=${band}` : ''}`).then(setRows)
-  }, [band])
+    loadActions()
+  }, [band, loadActions])
 
   useEffect(() => {
     load()
@@ -55,7 +63,7 @@ export default function Risk() {
         <div className="table-wrap">
           <table className="table">
             <thead>
-              <tr><th>Employee</th><th>Department</th><th className="right">Score</th><th>Band</th><th>Top factors</th></tr>
+              <tr><th>Employee</th><th>Department</th><th className="right">Score</th><th>Band</th><th>Top factors</th><th /></tr>
             </thead>
             <tbody>
               {rows?.map((r) => (
@@ -72,13 +80,29 @@ export default function Risk() {
                       ))}
                     </ul>
                   </td>
+                  <td><button className="btn link" onClick={() => setLogging(r)}>Log action</button></td>
                 </tr>
               ))}
-              {rows && rows.length === 0 && <tr><td colSpan={5} className="muted">No scores yet.</td></tr>}
+              {rows && rows.length === 0 && <tr><td colSpan={6} className="muted">No scores yet.</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
+      <div className="card">
+        <h2>Retention actions</h2>
+        <RetentionList actions={actions} onChanged={loadActions} />
+      </div>
+      {logging && (
+        <LogActionDialog
+          employee={logging}
+          onCancel={() => setLogging(null)}
+          onSaved={(a) => {
+            setLogging(null)
+            setNotice(`Action logged for ${a.employeeName}, due ${a.dueDate}.`)
+            loadActions()
+          }}
+        />
+      )}
     </section>
   )
 }
