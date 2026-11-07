@@ -152,11 +152,14 @@ export default function Dashboard() {
   const [report, setReport] = useState(null)
   const [trend, setTrend] = useState(null)
   const [insights, setInsights] = useState(null)
+  const [alerts, setAlerts] = useState([])
   const [error, setError] = useState('')
 
   useEffect(() => {
     api('/api/departments').then(setDepartments)
-  }, [])
+    // AAS-F-060: open threshold breaches, for the roles that receive them
+    if (user.role !== 'LEADERSHIP') api('/api/alerts').then((list) => setAlerts(list.filter((a) => !a.resolved)))
+  }, [user.role])
 
   useEffect(() => {
     const params = new URLSearchParams(range)
@@ -217,6 +220,12 @@ export default function Dashboard() {
         )}
       </div>
 
+      {alerts.map((a) => (
+        <p key={a.id} className="error" role="alert">
+          Attrition alert: <strong>{a.departmentName}</strong> lost {a.rate}% of its people from {a.periodFrom} to {a.periodTo},
+          above the {a.threshold}% threshold.
+        </p>
+      ))}
       {error && <p className="error">{error}</p>}
       {k && (
         <>
