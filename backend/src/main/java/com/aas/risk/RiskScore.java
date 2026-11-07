@@ -8,6 +8,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 public class RiskScore {
@@ -32,15 +35,33 @@ public class RiskScore {
     @Column(nullable = false)
     private LocalDate scoredOn;
 
+    /** Top factors, one per line as "points|label" (AAS-F-051). */
+    private String factors;
+
     protected RiskScore() {
     }
 
-    public RiskScore(Long orgId, Long employeeId, int score, RiskModel.Band band, LocalDate scoredOn) {
+    public RiskScore(Long orgId, Long employeeId, RiskModel.Result result, LocalDate scoredOn) {
         this.orgId = orgId;
         this.employeeId = employeeId;
-        this.score = score;
-        this.band = band;
+        this.score = result.score();
+        this.band = result.band();
         this.scoredOn = scoredOn;
+        this.factors = result.factors().stream().limit(TOP_FACTORS)
+                .map(f -> f.points() + "|" + f.label())
+                .collect(Collectors.joining("\n"));
+    }
+
+    public static final int TOP_FACTORS = 3;
+
+    public List<RiskModel.Factor> topFactors() {
+        if (factors == null || factors.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(factors.split("\n"))
+                .map(line -> line.split("\\|", 2))
+                .map(p -> new RiskModel.Factor(p[1], Integer.parseInt(p[0])))
+                .toList();
     }
 
     public Long getId() { return id; }
