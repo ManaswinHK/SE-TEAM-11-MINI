@@ -10,5 +10,6 @@ export const PAGE_ROLES = {
   dashboard: ['HR_ADMIN', 'HR_MANAGER', 'DEPT_MANAGER', 'LEADERSHIP'],
   employees: ['HR_ADMIN', 'HR_MANAGER', 'DEPT_MANAGER'],
   separations: ['HR_ADMIN', 'HR_MANAGER', 'DEPT_MANAGER'],
+  risk: ['HR_ADMIN', 'HR_MANAGER', 'DEPT_MANAGER'],
   settings: ['HR_ADMIN', 'HR_MANAGER', 'DEPT_MANAGER', 'LEADERSHIP'],
 }
