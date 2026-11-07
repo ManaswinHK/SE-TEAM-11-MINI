@@ -4,7 +4,7 @@ TC-AUTH-02,AAS-F-002,Department scoping,As Sales Dept Manager call GET /analytic
 TC-ORG-01,AAS-F-003,Configure organization,"HR Admin adds dept 'R&D', reason 'Relocation', threshold 4 %.",Values saved and appear in forms; threshold used for alerts.,Functional,Pass,OrgSetupTest,
 TC-EMP-01,AAS-F-010,Employee CRUD,Create employee E1001; edit designation; create duplicate E1001.,Create/update succeed; duplicate rejected with error.,Functional,Pass,EmployeeRecordsTest,
 TC-EMP-02,AAS-F-011,CSV bulk import,"Upload CSV with 1,000 rows of which 3 have invalid dates.",997 rows imported; error report lists the 3 rows.,Functional,Pass,EmployeeImportTest,
-TC-EMP-03,AAS-F-012,HRMS nightly sync,Change a record in the HRMS sandbox stub; run sync job.,Change reflected; sync log entry 'success'.,Integration,Not run,,"Feature not built yet: AAS-35, planned 6 Nov."
+TC-EMP-03,AAS-F-012,HRMS nightly sync,Change a record in the HRMS sandbox stub; run sync job.,Change reflected; sync log entry 'success'.,Integration,Pass,HrmsSyncAndReportTest,Runs against the sandbox HRMS stub; no real HRMS is available.
 TC-EMP-04,AAS-F-013,Headcount snapshot,Run month-start job on seeded data.,Snapshot rows created per department with correct counts.,Functional,Pass,HeadcountSnapshotTest,
 TC-SEP-01,AAS-F-020,Record resignation,"Record voluntary resignation for E1001, reason 'Better pay', regretted.",201 Created; status 'Notice period'; audit entry written.,Functional,Pass,SeparationTest,
 TC-SEP-02,AAS-F-021,Invalid separation dates,Last working day 01-10-2026 before resignation date 15-10-2026.,400 with field error; no record created.,Negative,Pass,SeparationTest,
@@ -18,23 +18,23 @@ TC-ANA-02,AAS-F-041,Breakdowns,View breakdown by department and tenure band for 
 TC-ANA-03,AAS-F-042,Trend chart,Open 12-month trend.,12 monthly points per year; values match monthly rates.,Functional,Pass,AttritionTrendTest,
 TC-ANA-04,AAS-F-043,Exit reasons ranking,"Seed reasons: pay 6, growth 4, manager 2.",Ranked pay > growth > manager with 50/33/17 %.,Functional,Pass,ExitReasonRankingTest,
 TC-ANA-05,AAS-F-044,Early attrition,Seed 3 leavers with tenure < 12 months out of 10.,Early-attrition share shown correctly.,Functional,Pass,AttritionTrendTest,
-TC-RSK-01,AAS-F-050,Risk score & band,Run weekly scoring job on seeded employees.,Every active employee scored 0-100; bands match thresholds.,Functional,Not run,,"Feature not built yet: AAS-30, planned 5 Nov."
-TC-RSK-02,AAS-F-051,Risk factors,Open risk card of a High-risk employee.,Top 3 factors with contribution shown.,Functional,Not run,,"Feature not built yet: AAS-31, planned 5 Nov."
-TC-RSK-03,AAS-F-052,Retention action,Log 'career discussion' due tomorrow; advance clock 2 days.,Action saved; shown as overdue.,Functional,Not run,,"Feature not built yet: AAS-32, planned 5 Nov."
-TC-REP-01,AAS-F-060,Threshold alert,Set threshold 4 %; seed Sales 3-month rate 6 %.,One alert in-app + email to HR and Sales manager.,Functional,Not run,,"Feature not built yet: AAS-33, planned 6 Nov."
-TC-REP-02,AAS-F-061,Export PDF/CSV,Export filtered dashboard.,PDF and CSV figures equal on-screen values.,Functional,Not run,,"Feature not built yet: AAS-34, planned 6 Nov."
-TC-REP-03,AAS-F-062,Scheduled report,Subscribe user; advance clock to 2nd of month.,Summary email delivered.,Functional,Not run,,"Feature not built yet: AAS-35, planned 6 Nov."
-TC-PERF-01,AAS-NF-001,Dashboard response time,"JMeter: 50k employees, 5 years data, 50 users.",p95 dashboard <= 3 s; API p95 <= 500 ms.,Performance,Not run,,"Planned under AAS-37, 6 Nov."
-TC-PERF-02,AAS-NF-002,Concurrency,JMeter: ramp to 200 users per tenant over 10 tenants.,p95 degradation < 20 %; error rate < 1 %.,Load,Not run,,"Planned under AAS-37, 6 Nov."
+TC-RSK-01,AAS-F-050,Risk score & band,Run weekly scoring job on seeded employees.,Every active employee scored 0-100; bands match thresholds.,Functional,Pass,RiskScoreTest,
+TC-RSK-02,AAS-F-051,Risk factors,Open risk card of a High-risk employee.,Top 3 factors with contribution shown.,Functional,Pass,RiskScoreTest,
+TC-RSK-03,AAS-F-052,Retention action,Log 'career discussion' due tomorrow; advance clock 2 days.,Action saved; shown as overdue.,Functional,Pass,RetentionActionTest,
+TC-REP-01,AAS-F-060,Threshold alert,Set threshold 4 %; seed Sales 3-month rate 6 %.,One alert in-app + email to HR and Sales manager.,Functional,Pass,AttritionAlertTest,
+TC-REP-02,AAS-F-061,Export PDF/CSV,Export filtered dashboard.,PDF and CSV figures equal on-screen values.,Functional,Partial,DashboardExportTest,"CSV figures checked against the dashboard API. PDF is the browser's print of the same page, checked by hand."
+TC-REP-03,AAS-F-062,Scheduled report,Subscribe user; advance clock to 2nd of month.,Summary email delivered.,Functional,Pass,HrmsSyncAndReportTest,
+TC-PERF-01,AAS-NF-001,Dashboard response time,"Load script (docs/perf/load_test.py): 50k employees, 5 years of data, 50 users.",p95 dashboard <= 3 s; API p95 <= 500 ms.,Performance,Fail,performance-report,Dashboard passes (p95 0.5 s at 50 users); other API calls fail (p95 3.7 s against 0.5 s) because the separations list is not paged.
+TC-PERF-02,AAS-NF-002,Concurrency,Load script: 200 concurrent users on one organization.,p95 degradation < 20 %; error rate < 1 %.,Load,Partial,performance-report,"No slowdown and no errors at 200 concurrent users, but in one organization instead of ten."
 TC-OPS-01,AAS-NF-003,Backup & restore,Restore last nightly backup to staging.,Restore < 4 h; data loss <= 24 h.,Reliability,Not run,,"No deployed environment or backup job, and no backlog item covers AAS-NF-003."
 TC-UX-01,AAS-NF-004,Accessibility & task time,axe scan of all pages; 5 users record a separation.,No WCAG AA violations; >= 4 users finish < 3 min.,Usability,Not run,,Not run; no backlog item covers AAS-NF-004.
 TC-UX-02,AAS-NF-006,Cross-browser,"Run smoke suite on Chrome, Edge, Firefox (2 versions each).",All pass.,Compatibility,Not run,,Not run; no backlog item covers AAS-NF-006.
 TC-QA-01,AAS-NF-005,Coverage gate,Run the test suite with JaCoCo.,Service-layer coverage >= 70 %.,Static / CI,Pass,JaCoCo,Measured by the report; CI does not fail the build on it yet.
 TC-SEC-01,AAS-SR-001,TLS configuration,Check the HSTS header; run testssl.sh once a deployed environment exists.,Only TLS 1.2/1.3; HSTS header present.,Security,Partial,AuthFlowTest,HSTS header tested. No TLS scan: there is no deployed HTTPS environment yet.
 TC-SEC-02,AAS-SR-002,Password storage & lockout,Inspect users table; 6 wrong logins.,bcrypt hashes; account locked 15 min.,Security,Pass,AuthFlowTest,
-TC-SEC-03,AAS-SR-003,Encryption at rest,Query employee table directly in DB.,PII columns are ciphertext.,Security,Not run,,"Feature not built yet: AAS-36, planned 6 Nov."
-TC-SEC-04,AAS-SR-004,Tenant isolation (IDOR),Org A token requests Org B employee/separation IDs.,404 for every request.,Security,Partial,OrgSetupTest;ClearanceTest,Cross-organization 404 tested for departments and separations; not yet for every entity.
-TC-SEC-05,AAS-SR-005,Audit trail,Record a separation; read the audit log table.,Audit entry created; no API can change it (none exposes it).,Security,Partial,SeparationTest,Audit entry on create tested; not yet for every entity. No API exposes the audit log.
+TC-SEC-03,AAS-SR-003,Encryption at rest,Query employee table directly in DB.,PII columns are ciphertext.,Security,Partial,SecurityHardeningTest,"Email, gender and survey comments are ciphertext in the database. Names are not encrypted (see DEVIATIONS.md)."
+TC-SEC-04,AAS-SR-004,Tenant isolation (IDOR),Org A token requests Org B employee/separation IDs.,404 for every request.,Security,Pass,SecurityHardeningTest;OrgSetupTest;ClearanceTest,
+TC-SEC-05,AAS-SR-005,Audit trail,Record a separation; read the audit log table.,Audit entry created; no API can change it (none exposes it).,Security,Pass,SecurityHardeningTest;SeparationTest,
 TC-SEC-06,AAS-NF-007,Data retention,Run anonymisation job with records older than 7 years.,Eligible records anonymised; aggregates unchanged.,Compliance,Not run,,"No retention job exists, and no backlog item covers AAS-NF-007."
 TC-SEC-07,AAS-SR-006,Survey anonymity threshold,Manager views survey results for a team with 3 responses.,'Insufficient data' shown; no individual answers.,Security,Pass,ExitReasonRankingTest,
 TC-SEC-08,AAS-SR-007,Injection & XSS,OWASP ZAP active scan; import CSV with '=HYPERLINK(...)'.,No High findings; cell escaped.,Security,Partial,EmployeeImportTest,CSV formula injection tested. OWASP ZAP scan not run yet (AAS-36).

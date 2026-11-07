@@ -31,6 +31,8 @@ aas:
     # Override with the AAS_JWT_SECRET environment variable outside local development.
     jwt-secret: ${AAS_JWT_SECRET:local-dev-secret-change-me-0123456789abcdef}
     access-token-minutes: 30
+    # AES-256 key for personal data at rest (AAS-SR-003), base64 of 32 bytes. Override with AAS_ENCRYPTION_KEY.
+    encryption-key: ${AAS_ENCRYPTION_KEY:bG9jYWwtZGV2LWVuY3J5cHRpb24ta2V5LTMyYnl0ZXM=}
     dev-otp-echo: false
 
 ---
@@ -65,6 +67,14 @@ aas:
     # Tests run the job themselves.
     send-cron: "-"
     reminder-cron: "-"
+  risk:
+    cron: "-"
+  alert:
+    cron: "-"
+  hrms:
+    cron: "-"
+  report:
+    cron: "-"
 
 ---
 spring:
@@ -75,3 +85,27 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/aas}
     username: ${DB_USER:aas}
     password: ${DB_PASSWORD:}
+---
+# Performance test (AAS-37): 50,000 generated employees in a separate database. Jobs are off so they do not skew timings.
+spring:
+  config:
+    activate:
+      on-profile: perf
+  datasource:
+    url: jdbc:h2:file:./data/aas-perf;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password: ""
+aas:
+  security:
+    dev-otp-echo: true
+  survey:
+    send-cron: "-"
+    reminder-cron: "-"
+  risk:
+    cron: "-"
+  alert:
+    cron: "-"
+  hrms:
+    cron: "-"
+  report:
+    cron: "-"

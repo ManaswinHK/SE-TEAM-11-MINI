@@ -120,7 +120,7 @@ def validation_report(suites):
     for case in cases:
         # A case only counts as passed if every test class it relies on ran and passed in this run.
         for name in filter(None, case["Evidence"].split(";")):
-            if name == "JaCoCo":
+            if name in ("JaCoCo", "performance-report"):
                 continue
             suite = suites.get(name)
             if suite is None or suite["failures"] or suite["errors"]:
@@ -129,7 +129,8 @@ def validation_report(suites):
     text = header("System Validation Report")
     text += f"**{len(cases)} test cases: " + ", ".join(f"{counts[s]} {s}" for s in ("Pass", "Partial", "Fail", "Not run")) + ".**\n\n"
     text += ("Pass means an automated test covers the whole case and passed in this run. Partial means only part "
-             "of it is covered, as the notes explain. Not run means it has not been executed.\n\n")
+             "of it is covered, as the notes explain. Fail means it was run and missed its target. Not run means it "
+             "has not been executed. Performance results are in performance-report.md.\n\n")
     text += "| TC ID | Requirement | Title | Status | Evidence | Notes |\n|---|---|---|---|---|---|\n"
     for c in cases:
         text += (f"| {c['TC ID']} | {c['Req ID']} | {c['Title']} | {c['Status']} | "

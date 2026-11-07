@@ -3,6 +3,8 @@ package com.aas.employee;
 import com.aas.auth.AccessScope;
 import com.aas.auth.CurrentUser;
 import com.aas.common.ApiException;
+import com.aas.common.AuditLog;
+import com.aas.common.AuditLogRepository;
 import com.aas.employee.EmployeeDtos.EmployeeRequest;
 import com.aas.employee.EmployeeDtos.EmployeeView;
 import com.aas.employee.EmployeeDtos.PageView;
@@ -26,8 +28,11 @@ public class EmployeeService {
     private final EmployeeRepository employees;
     private final DepartmentRepository departments;
     private final AccessScope scope;
+    private final AuditLogRepository audit;
 
-    public EmployeeService(EmployeeRepository employees, DepartmentRepository departments, AccessScope scope) {
+    public EmployeeService(EmployeeRepository employees, DepartmentRepository departments, AccessScope scope,
+                           AuditLogRepository audit) {
+        this.audit = audit;
         this.employees = employees;
         this.departments = departments;
         this.scope = scope;
@@ -53,6 +58,11 @@ public class EmployeeService {
                 result.getTotalElements(), result.getNumber(), result.getSize(), result.getTotalPages());
     }
 
+    /** AAS-SR-005: every change to an employee record is audited. */
+    private void record(CurrentUser user, String action, Employee e) {
+        audit.save(new AuditLog(user.orgId(), user.userId(), user.email(), action, "EMPLOYEE", e.getId(), e.getEmployeeCode()));
+    }
+
     public EmployeeView get(CurrentUser user, Long id) {
         Employee e = find(user, id);
         scope.checkDepartment(user, e.getDepartmentId());
@@ -67,7 +77,9 @@ public class EmployeeService {
         }
         Employee e = new Employee(user.orgId(), req.employeeCode().trim(), req.fullName().trim(), req.departmentId(), req.joinDate());
         apply(e, req);
-        return EmployeeView.of(employees.save(e), departmentNames(user.orgId()).get(e.getDepartmentId()));
+        employees.save(e);
+        record(user, "CREATE", e);
+        return EmployeeView.of(e, departmentNames(user.orgId()).get(e.getDepartmentId()));
     }
 
     @Transactional
@@ -83,6 +95,7 @@ public class EmployeeService {
         e.setJoinDate(req.joinDate());
         e.setDepartmentId(req.departmentId());
         apply(e, req);
+        record(user, "UPDATE", e);
         return EmployeeView.of(e, departmentNames(user.orgId()).get(e.getDepartmentId()));
     }
 
@@ -91,6 +104,7 @@ public class EmployeeService {
     public EmployeeView deactivate(CurrentUser user, Long id) {
         Employee e = find(user, id);
         e.setStatus(EmployeeStatus.INACTIVE);
+        record(user, "DEACTIVATE", e);
         return EmployeeView.of(e, departmentNames(user.orgId()).get(e.getDepartmentId()));
     }
 
