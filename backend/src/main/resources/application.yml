@@ -65,6 +65,14 @@ aas:
     # Tests run the job themselves.
     send-cron: "-"
     reminder-cron: "-"
+  risk:
+    cron: "-"
+  alert:
+    cron: "-"
+  hrms:
+    cron: "-"
+  report:
+    cron: "-"
 
 ---
 spring:

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, LineElement, PointElement, Tooltip } from 'chart.js'
 import { Bar, Line } from 'react-chartjs-2'
-import { api } from '../api.js'
+import { api, download } from '../api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Legend, Tooltip)
@@ -152,11 +152,14 @@ export default function Dashboard() {
   const [report, setReport] = useState(null)
   const [trend, setTrend] = useState(null)
   const [insights, setInsights] = useState(null)
+  const [alerts, setAlerts] = useState([])
   const [error, setError] = useState('')
 
   useEffect(() => {
     api('/api/departments').then(setDepartments)
-  }, [])
+    // AAS-F-060: open threshold breaches, for the roles that receive them
+    if (user.role !== 'LEADERSHIP') api('/api/alerts').then((list) => setAlerts(list.filter((a) => !a.resolved)))
+  }, [user.role])
 
   useEffect(() => {
     const params = new URLSearchParams(range)
@@ -180,6 +183,12 @@ export default function Dashboard() {
     return id ? departments.find((d) => d.id === id)?.name : null
   }, [report, departments])
 
+  function exportCsv() {
+    const params = new URLSearchParams(range)
+    if (departmentId) params.set('departmentId', departmentId)
+    download(`/api/analytics/export.csv?${params}`, `attrition-${range.from}-to-${range.to}.csv`)
+  }
+
   function choosePreset(key) {
     setPreset(key)
     if (key !== 'custom') setRange(presetRange(key))
@@ -196,9 +205,14 @@ export default function Dashboard() {
             {k && ` · ${k.from} to ${k.to}`}
           </p>
         </div>
+        {/* AAS-F-061: CSV of the figures shown, and the page itself printed to PDF */}
+        <div className="page-actions no-print">
+          <button className="btn" onClick={exportCsv} disabled={!k}>Export CSV</button>
+          <button className="btn" onClick={() => window.print()} disabled={!k}>Export PDF</button>
+        </div>
       </div>
 
-      <div className="filters card">
+      <div className="filters card no-print">
         <select value={preset} onChange={(e) => choosePreset(e.target.value)} aria-label="Period">
           {PRESETS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
           <option value="custom">Custom range</option>
@@ -217,6 +231,12 @@ export default function Dashboard() {
         )}
       </div>
 
+      {alerts.map((a) => (
+        <p key={a.id} className="error" role="alert">
+          Attrition alert: <strong>{a.departmentName}</strong> lost {a.rate}% of its people from {a.periodFrom} to {a.periodTo},
+          above the {a.threshold}% threshold.
+        </p>
+      ))}
       {error && <p className="error">{error}</p>}
       {k && (
         <>
