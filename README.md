@@ -12,9 +12,12 @@ Software Engineering Lab mini project, Section B.
 | R Harshith | PES1UG24AM117 |
 
 ## Deliverables
-- [Software Requirements Specification](SRS_SAD_TestPlan/SRS_Attrition_Analysis_System.pdf)
-- [Software Architecture & Design](SRS_SAD_TestPlan/SAD_Attrition_Analysis_System.pdf)
-- [Software Test Plan](SRS_SAD_TestPlan/Test_Plan_Attrition_Analysis_System.pdf)
+- [Software Requirements Specification](docs/SRS_Attrition_Analysis_System.pdf)
+- [Software Architecture & Design](docs/SAD_Attrition_Analysis_System.pdf)
+- [Software Test Plan](docs/Test_Plan_Attrition_Analysis_System.pdf)
+- [Deviations from the design documents](docs/DEVIATIONS.md)
+- [Test cases with current status](docs/test-cases.csv)
+- Test reports: [unit](docs/reports/unit-test-report.md), [system validation](docs/reports/system-validation-report.md), [code coverage](docs/reports/code-coverage-report.md), [branch coverage](docs/reports/branch-coverage-report.md)
 
 ## Tech stack
 | Layer | Technology |
@@ -53,7 +56,8 @@ HR roles must enter a 6-digit code from an authenticator app. On first sign-in t
 ## Tests
 ```bash
 cd backend && ./mvnw verify
-cd frontend && npm run lint && npm test && npm run build
+cd frontend && npm run lint && npm run coverage && npm run build
+python docs/generate_reports.py   # refreshes docs/reports from the latest run
 ```
 
 ## Workflow
