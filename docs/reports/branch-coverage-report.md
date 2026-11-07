@@ -1,6 +1,6 @@
 # Branch Coverage Report
 
-Generated 2026-11-04 from commit `c417917`.
+Generated 2026-11-07 from commit `6943f09`.
 
 Share of decision branches (if, switch, conditional) exercised by the tests.
 
@@ -8,16 +8,20 @@ Share of decision branches (if, switch, conditional) exercised by the tests.
 
 | Package | Covered | Missed | Coverage |
 |---|---:|---:|---:|
-| com.aas.analytics | 64 | 14 | 82.1% |
-| com.aas.auth | 72 | 30 | 70.6% |
-| com.aas.common | 41 | 5 | 89.1% |
-| com.aas.config | 0 | 63 | 0.0% |
-| com.aas.employee | 77 | 31 | 71.3% |
+| com.aas.alert | 29 | 3 | 90.6% |
+| com.aas.analytics | 87 | 17 | 83.7% |
+| com.aas.auth | 78 | 26 | 75.0% |
+| com.aas.common | 48 | 6 | 88.9% |
+| com.aas.config | 0 | 81 | 0.0% |
+| com.aas.employee | 84 | 32 | 72.4% |
+| com.aas.hrms | 44 | 28 | 61.1% |
 | com.aas.org | 5 | 13 | 27.8% |
+| com.aas.report | 10 | 2 | 83.3% |
+| com.aas.risk | 60 | 18 | 76.9% |
 | com.aas.separation | 54 | 14 | 79.4% |
 | com.aas.survey | 38 | 6 | 86.4% |
-| **Total** | **351** | **176** | **66.6%** |
+| **Total** | **537** | **246** | **68.6%** |
 
 ## Frontend
 
-Frontend (Vitest, V8): 40 of 358 covered, **11.2%**.
+Frontend (Vitest, V8): 42 of 402 covered, **10.4%**.
