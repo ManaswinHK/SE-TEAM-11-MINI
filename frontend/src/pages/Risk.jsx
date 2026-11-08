@@ -55,7 +55,7 @@ export default function Risk() {
         <div className="table-wrap">
           <table className="table">
             <thead>
-              <tr><th>Employee</th><th>Department</th><th className="right">Score</th><th>Band</th></tr>
+              <tr><th>Employee</th><th>Department</th><th className="right">Score</th><th>Band</th><th>Top factors</th></tr>
             </thead>
             <tbody>
               {rows?.map((r) => (
@@ -64,9 +64,17 @@ export default function Risk() {
                   <td>{r.departmentName}</td>
                   <td className="right">{r.score}</td>
                   <td><span className={BAND_CLASS[r.band]}>{BAND_LABEL[r.band]}</span></td>
+                  <td>
+                    {/* AAS-F-051: what drives the score, with each factor's share of it */}
+                    <ul className="factors">
+                      {r.factors.map((f) => (
+                        <li key={f.label}>{f.label} <span className="muted small">{f.share}%</span></li>
+                      ))}
+                    </ul>
+                  </td>
                 </tr>
               ))}
-              {rows && rows.length === 0 && <tr><td colSpan={4} className="muted">No scores yet.</td></tr>}
+              {rows && rows.length === 0 && <tr><td colSpan={5} className="muted">No scores yet.</td></tr>}
             </tbody>
           </table>
         </div>

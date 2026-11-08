@@ -30,8 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RiskService {
 
+    /** share: the factor's part of the score in percent, so the card can show relative contribution. */
+    public record FactorView(String label, int points, int share) {
+    }
+
     public record RiskView(Long employeeId, String employeeCode, String employeeName, Long departmentId,
-                           String departmentName, int score, RiskModel.Band band, LocalDate scoredOn) {
+                           String departmentName, int score, RiskModel.Band band, LocalDate scoredOn,
+                           List<FactorView> factors) {
     }
 
     private static final Logger log = LoggerFactory.getLogger(RiskService.class);
@@ -75,7 +80,7 @@ public class RiskService {
             }
             RiskModel.Result r = RiskModel.score(e.getJoinDate(), e.getLastPromotionDate(), e.getPerformanceRating(),
                     teamRates.getOrDefault(e.getDepartmentId(), BigDecimal.ZERO), today);
-            scores.save(new RiskScore(orgId, e.getId(), r.score(), r.band(), today));
+            scores.save(new RiskScore(orgId, e.getId(), r, today));
             count++;
         }
         return count;
@@ -113,8 +118,11 @@ public class RiskService {
                 .filter(r -> band == null || r.getBand() == band)
                 .map(r -> {
                     Employee e = byId.get(r.getEmployeeId());
+                    List<FactorView> factors = r.topFactors().stream()
+                            .map(f -> new FactorView(f.label(), f.points(), Math.round(100f * f.points() / r.getScore())))
+                            .toList();
                     return new RiskView(e.getId(), e.getEmployeeCode(), e.getFullName(), e.getDepartmentId(),
-                            deptNames.get(e.getDepartmentId()), r.getScore(), r.getBand(), r.getScoredOn());
+                            deptNames.get(e.getDepartmentId()), r.getScore(), r.getBand(), r.getScoredOn(), factors);
                 })
                 .filter(v -> dept == null || dept.equals(v.departmentId()))
                 .sorted(Comparator.comparingInt(RiskView::score).reversed().thenComparing(RiskView::employeeName))

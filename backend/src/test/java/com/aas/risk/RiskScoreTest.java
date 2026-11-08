@@ -126,6 +126,23 @@ class RiskScoreTest {
         assertThat(salesScore).isEqualTo(financeScore + 25);
     }
 
+    /** TC-RSK-02: a High-risk employee's card shows the top 3 factors with their contribution. */
+    @Test
+    void highRiskEmployeeShowsTopThreeFactors() throws Exception {
+        // Joined 2 years ago, never promoted, top rating: tenure 15, no promotion 18, high performer 20 (+ base 10)
+        person(sales, LocalDate.now().minusYears(2).minusDays(10), null, 5);
+        mvc.perform(post("/api/risk/run").header("Authorization", bearer(hr))).andExpect(status().isOk());
+
+        mvc.perform(get("/api/risk?band=MEDIUM").header("Authorization", bearer(hr)))
+                .andExpect(jsonPath("$[0].score").value(63))
+                .andExpect(jsonPath("$[0].factors.length()").value(3))
+                .andExpect(jsonPath("$[0].factors[0].label").value("High performer without a recent promotion"))
+                .andExpect(jsonPath("$[0].factors[0].points").value(20))
+                .andExpect(jsonPath("$[0].factors[0].share").value(32))
+                .andExpect(jsonPath("$[0].factors[1].points").value(18))
+                .andExpect(jsonPath("$[0].factors[2].points").value(15));
+    }
+
     @Test
     void listIsScopedAndRestricted() throws Exception {
         person(sales, TODAY.minusYears(2), null, 5);
