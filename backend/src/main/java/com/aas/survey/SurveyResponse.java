@@ -1,9 +1,11 @@
 package com.aas.survey;
 
+import com.aas.analytics.AnalyticsInvalidation;
 import com.aas.common.EncryptedStringConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -11,6 +13,7 @@ import java.time.LocalDateTime;
 
 /** A completed exit survey: 1-5 ratings plus optional free text (AAS-F-031). */
 @Entity
+@EntityListeners(AnalyticsInvalidation.class)
 public class SurveyResponse {
 
     @Id

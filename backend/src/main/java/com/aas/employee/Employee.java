@@ -1,9 +1,11 @@
 package com.aas.employee;
 
+import com.aas.analytics.AnalyticsInvalidation;
 import com.aas.common.EncryptedStringConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -14,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
+@EntityListeners(AnalyticsInvalidation.class)
 public class Employee {
 
     @Id
