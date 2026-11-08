@@ -135,3 +135,13 @@ label.inline input { margin-top: 0; }
 .chart { position: relative; }
 .filters.card { padding: 0.75rem; align-items: center; }
 .table td.right, .table th.right { font-variant-numeric: tabular-nums; }
+
+.page-actions { display: flex; gap: 0.5rem; }
+
+/* Export PDF prints the dashboard: no navigation or controls, cards kept whole. */
+@media print {
+  .sidebar, .no-print, [role="alert"] { display: none !important; }
+  .content { padding: 0; }
+  body { background: #fff; }
+  .card, .kpi { break-inside: avoid; box-shadow: none; }
+}
