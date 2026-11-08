@@ -55,7 +55,7 @@ Test cases changed by the sprints are in `test-cases.csv`, and the Test Plan is 
 ## Process
 
 - Sprint 1 was planned for 27-31 Oct 2026. Its end date was extended to 2 Nov because the last stories were closed late.
-- The Sprint 1 backlog was added just after the sprint started, so its burndown begins with a jump from 0 to 47.
+- The Sprint 1 backlog was added just after the sprint started, so Jira's burndown begins with a jump from 0 to 47. The charts in `docs/burndown/` start from the committed 47 points.
 - Sprint 1 code was finished on 28 Oct and released to `main` in stages through 3 Nov, and Jira cards moved with those merges.
 - AAS-21 (Sprint 1 video) was moved to Done before the video was recorded; the video was added on 7 Nov.
 - Sprint 2 work planned for 5-6 Nov was done on 7 Nov.

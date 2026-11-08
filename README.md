@@ -86,6 +86,7 @@ python docs/perf/load_test.py
 
 ## Workflow
 - Work is tracked in Jira (space `AAS`). Sprint 1: 27–31 Oct 2026, Sprint 2: 2–7 Nov 2026.
+- Burndown charts from Jira: [Sprint 1](docs/burndown/sprint1_burndown.png) (47 → 0 points), [Sprint 2](docs/burndown/sprint2_burndown.png) (58 → 0 points).
 - Branch per issue, named with the Jira key: `AAS-10-login-otp`.
 - Commit messages start with the key: `AAS-10 Add OTP verification`.
 - Open a pull request to `main`. CI must pass and the repo owner reviews and merges.
