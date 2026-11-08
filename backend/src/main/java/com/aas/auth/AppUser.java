@@ -42,6 +42,7 @@ public class AppUser {
     private int failedAttempts;
     private LocalDateTime lockedUntil;
     private boolean active = true;
+    private boolean monthlyReport;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -81,6 +82,8 @@ public class AppUser {
     public LocalDateTime getLockedUntil() { return lockedUntil; }
     public void setLockedUntil(LocalDateTime lockedUntil) { this.lockedUntil = lockedUntil; }
     public boolean isActive() { return active; }
+    public boolean isMonthlyReport() { return monthlyReport; }
+    public void setMonthlyReport(boolean monthlyReport) { this.monthlyReport = monthlyReport; }
     public void setActive(boolean active) { this.active = active; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
