@@ -1,6 +1,8 @@
 package com.aas.employee;
 
+import com.aas.common.EncryptedStringConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -27,6 +29,7 @@ public class Employee {
     @Column(nullable = false)
     private String fullName;
 
+    @Convert(converter = EncryptedStringConverter.class)
     private String email;
 
     @Column(nullable = false)
@@ -36,6 +39,7 @@ public class Employee {
     private String managerName;
     private String location;
     private String grade;
+    @Convert(converter = EncryptedStringConverter.class)
     private String gender;
 
     @Column(nullable = false)
