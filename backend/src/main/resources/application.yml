@@ -67,6 +67,8 @@ aas:
     reminder-cron: "-"
   risk:
     cron: "-"
+  alert:
+    cron: "-"
 
 ---
 spring:
