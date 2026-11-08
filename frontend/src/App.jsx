@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import Employees from './pages/Employees.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
+import Risk from './pages/Risk.jsx'
 import Separations from './pages/Separations.jsx'
 import Settings from './pages/Settings.jsx'
 import Survey from './pages/Survey.jsx'
@@ -20,6 +21,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="employees" element={<RequirePage page="employees"><Employees /></RequirePage>} />
           <Route path="separations" element={<RequirePage page="separations"><Separations /></RequirePage>} />
+          <Route path="risk" element={<RequirePage page="risk"><Risk /></RequirePage>} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
